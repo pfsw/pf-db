@@ -13,8 +13,8 @@ package org.pfsw.db;
 // IMPORTS
 // ===========================================================================
 import org.pfsw.logging.Logger;
-import org.pfsw.logging.NilLogger;
-import org.pfsw.logging.PrintStreamLogger;
+import org.pfsw.logging.nil.NilLogger;
+import org.pfsw.logging.stdout.PrintStreamLogger;
 
 /**
  * This is the central access point for the package's logger.

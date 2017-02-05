@@ -12,8 +12,6 @@ package org.pfsw.db.util ;
 // ===========================================================================
 // IMPORTS
 // ===========================================================================
-import org.pfsw.db.util.DBUtil;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
