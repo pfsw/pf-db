@@ -35,25 +35,21 @@ public class ObjectIdentifierFactoryTester
   // =========================================================================
   // CONSTANTS
   // =========================================================================
-  protected static final PrintStream OUT = System.out ;
-  private static final String DATABASE_NAME 		= "jdbc:idb:X:\\InstantDB\\3.21\\Databases\\Test\\test.prp" ;
-  private static final String JDBC_DRIVER			= "org.enhydra.instantdb.jdbc.idbDriver" ;
-
-  // =========================================================================
-  // INSTANCE VARIABLES
-  // =========================================================================
+  protected static final PrintStream OUT = System.out;
+  private static final String DATABASE_NAME = "jdbc:idb:X:\\InstantDB\\3.21\\Databases\\Test\\test.prp";
+  private static final String JDBC_DRIVER = "org.enhydra.instantdb.jdbc.idbDriver";
 
   // =========================================================================
   // CLASS METHODS
   // =========================================================================
 
-  public static void main( String[] args )
+  public static void main(String[] args)
   {
-    ObjectIdentifierFactoryTester inst = new ObjectIdentifierFactoryTester() ;
+    ObjectIdentifierFactoryTester inst = new ObjectIdentifierFactoryTester();
 
-    inst.run() ;
-    System.exit(0) ;
-  } // main()
+    inst.run();
+    System.exit(0);
+  }
 
   // =========================================================================
   // CONSTRUCTORS
@@ -63,7 +59,8 @@ public class ObjectIdentifierFactoryTester
    */
   public ObjectIdentifierFactoryTester()
   {
-  } // ObjectIdentifierFactoryTester()
+    super();
+  }
 
   // =========================================================================
   // PROTECTED INSTANCE METHODS
@@ -71,67 +68,55 @@ public class ObjectIdentifierFactoryTester
 
   protected void run()
   {
-  	System.out.println("Max-long: " + Long.MAX_VALUE );
-  	System.out.println("Min-long: " + Long.MIN_VALUE );
-    test1() ;
-    test2() ;
-  } // run()
-
-  // -------------------------------------------------------------------------
+    System.out.println("Max-long: " + Long.MAX_VALUE);
+    System.out.println("Min-long: " + Long.MIN_VALUE);
+    test1();
+    test2();
+  }
 
   protected void test1()
   {
-    ObjectIdentifierProducer idFactory = new ObjectIdentifierGenerator() ;
-    OUT.println( "TEST 1\n------\n") ;
-    OUT.println() ;
-    this.generateIds( idFactory ) ;
-  } // test1()
-
-  // -------------------------------------------------------------------------
+    ObjectIdentifierProducer idFactory = new ObjectIdentifierGenerator();
+    OUT.println("TEST 1\n------\n");
+    OUT.println();
+    this.generateIds(idFactory);
+  }
 
   protected void test2()
   {
-  	ObjectIdentifierDB idFactory	= null ;
+    ObjectIdentifierDB idFactory = null;
 
-    idFactory = new ObjectIdentifierDB( this.createDataSource(), "TEST1" ) ;
-    idFactory.setBlockSize( 15 ) ;
-    OUT.println( "TEST 2\n------\n") ;
-    this.generateIds( idFactory ) ;
-    OUT.println() ;
-  } // test2()
+    idFactory = new ObjectIdentifierDB(this.createDataSource(), "TEST1");
+    idFactory.setBlockSize(15);
+    OUT.println("TEST 2\n------\n");
+    this.generateIds(idFactory);
+    OUT.println();
+  }
 
-  // -------------------------------------------------------------------------
-
-  protected void generateIds( ObjectIdentifierProducer idFactory )
+  protected void generateIds(ObjectIdentifierProducer idFactory)
   {
-    for ( int i = 1 ; i <= 20 ; i++ )
+    for (int i = 1; i <= 20; i++)
     {
-      OUT.println( "ID = " + idFactory.newIdentifier() ) ;
+      OUT.println("ID = " + idFactory.newIdentifier());
     }
-  } // generateIds()
+  }
 
-  // -------------------------------------------------------------------------
-
-  protected void reportSQLException( String msg, SQLException ex )
+  protected void reportSQLException(String msg, SQLException ex)
   {
-    System.err.println( "==============================" ) ;
-    System.err.println( msg ) ;
-    System.err.println( ex.toString() ) ;
-    ex. printStackTrace( System.err ) ;
-    System.err.println( "==============================" ) ;
-  } // reportSQLException()
+    System.err.println("==============================");
+    System.err.println(msg);
+    System.err.println(ex.toString());
+    ex.printStackTrace(System.err);
+    System.err.println("==============================");
+  }
 
-  // -------------------------------------------------------------------------
-  
-  protected DataSource createDataSource() 
-	{
-  	DataSourceProxy ds ;
-  	
-  	ds = new DataSourceProxy( DATABASE_NAME ) ;
-  	ds.setDriverClassName( JDBC_DRIVER ) ;
-  	return ds ;
-	} // createDataSource()
-	
-	// -------------------------------------------------------------------------
-  
-} // class ObjectIdentifierFactoryTester
+  protected DataSource createDataSource()
+  {
+    DataSourceProxy ds;
+
+    ds = new DataSourceProxy(DATABASE_NAME);
+    ds.setDriverClassName(JDBC_DRIVER);
+    return ds;
+  }
+
+}

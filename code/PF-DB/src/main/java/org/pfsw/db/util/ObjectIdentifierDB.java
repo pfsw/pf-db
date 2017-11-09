@@ -38,55 +38,30 @@ import org.pfsw.logging.Logger;
  */
 public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 {
-
   // =========================================================================
   // CONSTANTS
   // =========================================================================
-  protected static final String OID_TABLE_NAME		= "OIDADMIN" ;
-  protected static final String OID_CN_CATEGORY		= "CATEGORY" ;
-  protected static final String OID_CN_NEXTID			= "NEXTID" ;
-  protected static final String OID_CN_BLOCKSIZE	= "BLOCKSIZE" ;
+  protected static final String OID_TABLE_NAME = "OIDADMIN";
+  protected static final String OID_CN_CATEGORY = "CATEGORY";
+  protected static final String OID_CN_NEXTID = "NEXTID";
+  protected static final String OID_CN_BLOCKSIZE = "BLOCKSIZE";
 
-  protected static final int INITIAL_BLOCKSIZE		= 1 ;
+  protected static final int INITIAL_BLOCKSIZE = 1;
 
   // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
-  private DataSource dataSource = null ;
-  protected DataSource getDataSource() { return dataSource ; }
-  protected void setDataSource( DataSource newValue ) { dataSource = newValue ; }
+  private DataSource dataSource = null;
+  private String category = "$DEFAULT";
+  protected boolean tableInitialized = false;
+  private String select = null;
+  private String selectCategory = null;
+  private String selectAny = null;
+  private String update = null;
+  private String qualifier = null;
+  private long lastPrefetchedId = 0;
+  protected Integer blockSize = null;
 
-  private String category = "$DEFAULT" ;
-  protected String getCategory() { return category ; }
-  protected void setCategory( String newValue ) { category = newValue ; }
-
-  protected boolean tableInitialized = false ;
-
-  private String select = null ;
-  protected String getSelect() { return select ; }
-  protected void setSelect( String newValue ) { select = newValue ; }
-
-  private String selectCategory = null ;
-  protected String getSelectCategory() { return selectCategory ; }
-  protected void setSelectCategory( String newValue ) { selectCategory = newValue ; }
-  
-  private String selectAny = null ;
-  protected String getSelectAny() { return selectAny ; }
-  protected void setSelectAny( String newValue ) { selectAny = newValue ; }
-  
-  private String update = null ;
-  protected String getUpdate() { return update ; }
-  protected void setUpdate( String newValue ) { update = newValue ; }
-
-  private String qualifier = null ;
-  protected String getQualifier() { return qualifier ; }
-  protected void setQualifier( String newValue ) { qualifier = newValue ; }
-
-  private long lastPrefetchedId = 0 ;
-  protected long getLastPrefetchedId() { return lastPrefetchedId ; }
-  protected void setLastPrefetchedId( long newValue ) { lastPrefetchedId = newValue ; }
-    
-  protected Integer blockSize = null ;
   // =========================================================================
   // CONSTRUCTORS
   // =========================================================================
@@ -98,9 +73,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   public ObjectIdentifierDB(DataSource ds)
   {
     this(null, ds);
-  } // ObjectIdentifierDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Initialize the new instance with the given data source.
@@ -112,9 +85,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   {
     this.setDataSource(ds);
     this.setQualifier(tableQualifier);
-  } // ObjectIdentifierDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Initialize the new instance with the data source.
@@ -130,9 +101,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       this.setCategory(categoryName);
     }
-  } // ObjectIdentifierDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Initialize the new instance with the data source.
@@ -149,7 +118,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       this.setCategory(categoryName);
     }
-  } // ObjectIdentifierDB() 
+  }
 
   // =========================================================================
   // PUBLIC INSTANCE METHODS
@@ -164,9 +133,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       return INITIAL_BLOCKSIZE;
     }
     return blockSize.intValue();
-  } // getBlockSize()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Set the block size this generator is using.
@@ -177,9 +144,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       blockSize = new Integer(newValue);
     }
-  } // setBlockSize()
-
-  // -------------------------------------------------------------------------
+  }
 
   // =========================================================================
   // PROTECTED INSTANCE METHODS
@@ -193,9 +158,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.loadNextIdFromDB();
     }
     return this.getNextAvailableId();
-  } // getNextId() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void loadNextIdFromDB()
   {
@@ -206,9 +169,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       id = this.idFromDB();
       this.setNextAvailableId(id);
     }
-  } // loadNextIdFromDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   @Override
   protected void setNextId(long id)
@@ -221,9 +182,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       this.setNextAvailableId(id);
     }
-  } // setNextId() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void setNextIdInDB(Connection conn, long id) throws SQLException
   {
@@ -232,9 +191,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     statement = conn.prepareStatement(this.sqlUpdateNextId());
     statement.setString(1, Long.toString(id));
     statement.execute();
-  } // setNextIdInDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean tableInitialized()
   {
@@ -283,9 +240,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     }
 
     return tableInitialized;
-  } // tableInitialized() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected long idFromDB()
   {
@@ -335,9 +290,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.closeConnection(conn);
     }
     return id;
-  } // idFromDB() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlCreateOidTable()
   {
@@ -354,9 +307,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     buffer.append("\t INTEGER )\n");
 
     return buffer.toString();
-  } // sqlCreateOidTable() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlInsertCategoryRow(String cat)
   {
@@ -373,9 +324,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     buffer.append(" )");
 
     return buffer.toString();
-  } // sqlInsertCategoryRow() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlUpdateNextId()
   {
@@ -396,9 +345,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.setUpdate(buffer.toString());
     }
     return this.getUpdate();
-  } // sqlUpdateNextId() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlSelectNextId()
   {
@@ -421,9 +368,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.setSelect(buffer.toString());
     }
     return this.getSelect();
-  } // sqlSelectNextId() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlSelectCategory()
   {
@@ -444,9 +389,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.setSelectCategory(buffer.toString());
     }
     return this.getSelectCategory();
-  } // sqlSelectCategory() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String sqlSelectAny()
   {
@@ -462,9 +405,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       this.setSelectAny(buffer.toString());
     }
     return this.getSelectAny();
-  } // sqlSelectAny() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String categoryString()
   {
@@ -475,9 +416,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     buffer.append("'");
 
     return buffer.toString();
-  } // categoryString() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void createOidTable(Connection conn) throws SQLException
   {
@@ -487,9 +426,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     statement.execute(this.sqlCreateOidTable());
     conn.commit();
     this.createRowForCategory(conn);
-  } // createOidTable() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void createRowForCategory(Connection conn) throws SQLException
   {
@@ -498,9 +435,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     statement = conn.createStatement();
     statement.execute(this.sqlInsertCategoryRow(this.getCategory()));
     conn.commit();
-  } // createRowForCategory() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean checkTableExists(Connection conn)
   {
@@ -513,9 +448,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       return false;
     }
-  } // checkTableExists() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean checkCategoryRowExists(Connection conn)
   {
@@ -527,9 +460,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       return false;
     }
-  } // checkCategoryRowExists() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean anyRowExists(Connection conn, String sql) throws SQLException
   {
@@ -542,16 +473,12 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     found = result.next();
     result.close();
     return found;
-  } // anyRowExists() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void reportSQLException(String msg, SQLException ex)
   {
     this.logger().logError(msg, ex);
-  } // reportSQLException() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected String getTableName()
   {
@@ -560,16 +487,12 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       return OID_TABLE_NAME;
     }
     return this.getQualifier() + "." + OID_TABLE_NAME;
-  } // getTableName() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected Connection getDbConnection() throws SQLException
   {
     return this.getDataSource().getConnection();
-  } // getDbConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void closeConnection(Connection conn)
   {
@@ -584,9 +507,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
         this.logger().logException(ex);
       }
     }
-  } // closeConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected void closeStatement(Statement stmt)
   {
@@ -601,15 +522,90 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
         this.logger().logException(ex);
       }
     }
-  } // closeStatement() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected Logger logger()
   {
     return LoggerProvider.getLogger();
-  } // logger() 
+  }
 
-  // -------------------------------------------------------------------------
+  protected DataSource getDataSource()
+  {
+    return this.dataSource;
+  }
 
-} // class ObjectIdentifierDB 
+  protected void setDataSource(DataSource newValue)
+  {
+    this.dataSource = newValue;
+  }
+
+  protected String getCategory()
+  {
+    return this.category;
+  }
+
+  protected void setCategory(String newValue)
+  {
+    this.category = newValue;
+  }
+
+  protected String getSelect()
+  {
+    return this.select;
+  }
+
+  protected void setSelect(String newValue)
+  {
+    this.select = newValue;
+  }
+
+  protected String getSelectCategory()
+  {
+    return this.selectCategory;
+  }
+
+  protected void setSelectCategory(String newValue)
+  {
+    this.selectCategory = newValue;
+  }
+
+  protected String getSelectAny()
+  {
+    return this.selectAny;
+  }
+
+  protected void setSelectAny(String newValue)
+  {
+    selectAny = newValue;
+  }
+
+  protected String getUpdate()
+  {
+    return this.update;
+  }
+
+  protected void setUpdate(String newValue)
+  {
+    this.update = newValue;
+  }
+
+  protected String getQualifier()
+  {
+    return this.qualifier;
+  }
+
+  protected void setQualifier(String newValue)
+  {
+    this.qualifier = newValue;
+  }
+
+  protected long getLastPrefetchedId()
+  {
+    return this.lastPrefetchedId;
+  }
+
+  protected void setLastPrefetchedId(long newValue)
+  {
+    this.lastPrefetchedId = newValue;
+  }
+}

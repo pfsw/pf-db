@@ -27,10 +27,6 @@ import org.pfsw.logging.stdout.PrintStreamLogger;
 public class LoggerProvider
 {
   // =========================================================================
-  // CONSTANTS
-  // =========================================================================
-
-  // =========================================================================
   // CLASS VARIABLES
   // =========================================================================
   private static Logger logger = new PrintStreamLogger();
@@ -45,9 +41,7 @@ public class LoggerProvider
   public static Logger getLogger()
   {
     return logger;
-  } // getLogger()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Replace the logger by another one. A value of null installs
@@ -56,12 +50,14 @@ public class LoggerProvider
   public static void setLogger(Logger newLogger)
   {
     if (newLogger == null)
+    {
       logger = new NilLogger();
+    }
     else
+    {
       logger = newLogger;
-  } // setLogger()
-
-  // -------------------------------------------------------------------------
+    }
+  }
 
   // =========================================================================
   // CONSTRUCTORS
@@ -72,8 +68,6 @@ public class LoggerProvider
   private LoggerProvider()
   {
     super();
-  } // LoggerProvider()
+  }
 
-  // -------------------------------------------------------------------------
-
-} // class LoggerProvider
+}

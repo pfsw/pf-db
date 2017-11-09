@@ -25,14 +25,9 @@ import org.pfsw.bif.identifier.IObjectIdGenerator;
  */
 public interface ObjectIdentifierProducer extends IObjectIdGenerator
 {
-  // =========================================================================
-  // PUBLIC INSTANCE METHODS
-  // =========================================================================
   /**
    * Returns a new identifier which is different to the last one.
    */
   public long nextIdentifier();
 
-  // -------------------------------------------------------------------------
-
-} // class ObjectIdentifierProducer
+}

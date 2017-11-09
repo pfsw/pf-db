@@ -10,7 +10,7 @@
 //
 // Copyright (c) 2001-2014, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
-package org.pfsw.db.util ;
+package org.pfsw.db.util;
 
 // ===========================================================================
 // IMPORTS
@@ -43,17 +43,11 @@ public class DataSourceProxy implements DataSource
   // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
-  private String dbUrl = null ;
-  private String dbUserid = null ;
-  private String dbPassword = null ;
-
-  private Connection dbConnection = null ;
-  protected Connection getDbConnection() { return dbConnection ; }
-  protected void setDbConnection( Connection newValue ) { dbConnection = newValue ; }
-
-  private DataSource dataSource = null ;
-  protected DataSource getDataSource() { return dataSource ; }
-  protected void setDataSource( DataSource newValue ) { dataSource = newValue ; }
+  private String dbUrl = null;
+  private String dbUserid = null;
+  private String dbPassword = null;
+  private Connection dbConnection = null;
+  private DataSource dataSource = null;
 
   // =========================================================================
   // CONSTRUCTORS
@@ -65,9 +59,7 @@ public class DataSourceProxy implements DataSource
   {
     super();
     this.setDbConnection(conn);
-  } // DataSourceProxy() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Initialize the new instance with all necessary connection information.
@@ -78,9 +70,7 @@ public class DataSourceProxy implements DataSource
     this.setDbUrl(url);
     this.setDbUserid(username);
     this.setDbPassword(password);
-  } // DataSourceProxy() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Initialize the new instance with an URL for the database connection.
@@ -88,9 +78,7 @@ public class DataSourceProxy implements DataSource
   public DataSourceProxy(String url)
   {
     this(url, null, null);
-  } // DataSourceProxy() 
-
-  // -------------------------------------------------------------------------
+  }
 
   public DataSourceProxy(DataSource dataSource, String username, String password)
   {
@@ -98,14 +86,12 @@ public class DataSourceProxy implements DataSource
     this.setDataSource(dataSource);
     this.setDbUserid(username);
     this.setDbPassword(password);
-  } // DataSourceProxy() 
-
-  // -------------------------------------------------------------------------
+  }
 
   public DataSourceProxy(DataSource dataSource)
   {
     this(dataSource, null, null);
-  } // DataSourceProxy() 
+  }
 
   // =========================================================================
   // PUBLIC INSTANCE METHODS
@@ -131,9 +117,7 @@ public class DataSourceProxy implements DataSource
       return DriverManager.getConnection(this.getDbUrl());
     }
     return DriverManager.getConnection(this.getDbUrl(), this.getDbUserid(), this.getDbPassword());
-  } // getConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Attempt to establish a database connection
@@ -146,9 +130,7 @@ public class DataSourceProxy implements DataSource
       return this.getDataSource().getConnection(username, password);
     }
     return DriverManager.getConnection(this.getDbUrl(), username, password);
-  } // getConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Always returns false.
@@ -157,10 +139,8 @@ public class DataSourceProxy implements DataSource
   public boolean isWrapperFor(Class<?> iface) throws SQLException
   {
     return false;
-  } // isWrapperFor() 
+  }
 
-  // -------------------------------------------------------------------------
-  
   /**
    * Always throws SQLException, becaus eno interfaces are supported.
    */
@@ -168,51 +148,37 @@ public class DataSourceProxy implements DataSource
   public <T> T unwrap(Class<T> iface) throws SQLException
   {
     throw new SQLException("Interface " + iface + " not supported!");
-  } // unwrap()
-  
-  // -------------------------------------------------------------------------
+  }
 
   public String getDbUrl()
   {
-    return dbUrl;
-  } // getDbUrl() 
-
-  // -------------------------------------------------------------------------
+    return this.dbUrl;
+  }
 
   public void setDbUrl(String url)
   {
-    dbUrl = url;
-  } // setDbUrl() 
-
-  // -------------------------------------------------------------------------
+    this.dbUrl = url;
+  }
 
   public String getDbUserid()
   {
-    return dbUserid;
-  } // getDbUserid() 
-
-  // -------------------------------------------------------------------------
+    return this.dbUserid;
+  }
 
   public void setDbUserid(String userId)
   {
-    dbUserid = userId;
-  } // setDbUserid() 
-
-  // -------------------------------------------------------------------------
+    this.dbUserid = userId;
+  }
 
   public String getDbPassword()
   {
-    return dbPassword;
-  } // getDbPassword() 
-
-  // -------------------------------------------------------------------------
+    return this.dbPassword;
+  }
 
   public void setDbPassword(String password)
   {
-    dbPassword = password;
-  } // setDbPassword() 
-
-  // -------------------------------------------------------------------------
+    this.dbPassword = password;
+  }
 
   /**
    * Returns the maximum time in seconds that this
@@ -227,9 +193,7 @@ public class DataSourceProxy implements DataSource
       return this.getDataSource().getLoginTimeout();
     }
     return DriverManager.getLoginTimeout();
-  } // getLoginTimeout() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Returns the log writer for this data source
@@ -242,9 +206,7 @@ public class DataSourceProxy implements DataSource
       return this.getDataSource().getLogWriter();
     }
     return DriverManager.getLogWriter();
-  } // getLogWriter() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Sets the maximum time in seconds that this
@@ -262,9 +224,7 @@ public class DataSourceProxy implements DataSource
     {
       DriverManager.setLoginTimeout(timeout);
     }
-  } // setLoginTimeout() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Sets the log writer for this data source
@@ -280,9 +240,7 @@ public class DataSourceProxy implements DataSource
     {
       DriverManager.setLogWriter(writer);
     }
-  } // setLogWriter() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Creates an instance of the given class name in order to register the 
@@ -298,27 +256,20 @@ public class DataSourceProxy implements DataSource
     {
       DriverManager.println(e.toString());
     }
-  } // setDriverClassName() 
-
-  // -------------------------------------------------------------------------
+  }
 
   // =========================================================================
   // PROTECTED INSTANCE METHODS
   // =========================================================================
-
   protected boolean hasDataSource()
   {
     return this.getDataSource() != null;
-  } // hasDataSource() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean hasConnection()
   {
     return this.getDbConnection() != null;
-  } // hasConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Attempt to establish a database connection using the wrapped datasource
@@ -330,8 +281,26 @@ public class DataSourceProxy implements DataSource
       return this.getDataSource().getConnection();
     }
     return this.getDataSource().getConnection(this.getDbUserid(), this.getDbPassword());
-  } // getDataSourceConnection() 
+  }
 
-  // -------------------------------------------------------------------------
+  protected Connection getDbConnection()
+  {
+    return this.dbConnection;
+  }
 
-} // class DataSourceProxy 
+  protected void setDbConnection(Connection newValue)
+  {
+    this.dbConnection = newValue;
+  }
+
+  protected DataSource getDataSource()
+  {
+    return this.dataSource;
+  }
+
+  protected void setDataSource(DataSource newValue)
+  {
+    this.dataSource = newValue;
+  }
+
+}

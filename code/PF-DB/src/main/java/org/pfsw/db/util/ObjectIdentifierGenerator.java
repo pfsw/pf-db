@@ -27,18 +27,9 @@ import org.pfsw.text.ObjectIdGenerator;
  * @author Manfred Duchrow
  * @version 1.5
  */
-public class ObjectIdentifierGenerator extends ObjectIdGenerator 
-  implements ObjectIdentifierProducer
+public class ObjectIdentifierGenerator extends ObjectIdGenerator implements ObjectIdentifierProducer
 {
   // =========================================================================
-  // CONSTANTS
-  // =========================================================================
-
-  // =========================================================================
-  // INSTANCE VARIABLES
-  // =========================================================================
-
-	// =========================================================================
   // CONSTRUCTORS
   // =========================================================================
   /**
@@ -47,23 +38,19 @@ public class ObjectIdentifierGenerator extends ObjectIdGenerator
    */
   public ObjectIdentifierGenerator()
   {
-    super() ;
-  } // ObjectIdentifierGenerator()
- 
-  // -------------------------------------------------------------------------
+    super();
+  }
 
   /**
    * Initialize the new instance with the length for the generated identifiers.
    * 
    * @param idLength The length to which Ids are filled up with leading zeros (must be > 0)
    */
-  public ObjectIdentifierGenerator( int idLength )
+  public ObjectIdentifierGenerator(int idLength)
   {
-    this() ;
-    this.setLength( idLength );
-  } // ObjectIdentifierGenerator()
- 
-  // -------------------------------------------------------------------------
+    this();
+    this.setLength(idLength);
+  }
 
   /**
    * Initialize the new instance with the length for the generated identifiers
@@ -72,21 +59,12 @@ public class ObjectIdentifierGenerator extends ObjectIdGenerator
    * @param startId The first id to be generated
    * @param idLength The length to which Ids are filled up with leading zeros
    */
-  public ObjectIdentifierGenerator( long startId, int idLength )
+  public ObjectIdentifierGenerator(long startId, int idLength)
   {
-    this( idLength ) ;
-    if ( startId >= 0 )
-      this.setNextAvailableId( startId );
-  } // ObjectIdentifierGenerator()
- 
-  // -------------------------------------------------------------------------
-
-  // =========================================================================
-  // PUBLIC INSTANCE METHODS
-  // =========================================================================
-	
-  // =========================================================================
-  // PROTECTED INSTANCE METHODS
-  // =========================================================================
-
-} // class ObjectIdentifierGenerator
+    this(idLength);
+    if (startId >= 0)
+    {
+      this.setNextAvailableId(startId);
+    }
+  }
+}

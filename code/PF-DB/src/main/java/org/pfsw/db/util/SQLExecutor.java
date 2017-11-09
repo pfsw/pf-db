@@ -8,7 +8,7 @@
 //
 // Copyright (c) 2002, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
-package org.pfsw.db.util ;
+package org.pfsw.db.util;
 
 // ===========================================================================
 // IMPORTS
@@ -30,20 +30,11 @@ import javax.sql.DataSource;
 public class SQLExecutor
 {
   // =========================================================================
-  // CONSTANTS
-  // =========================================================================
-
-  // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
-  private DataSource dataSource = null ;
-  protected DataSource getDataSource() { return dataSource ; }
-  protected void setDataSource( DataSource newValue ) { dataSource = newValue ; }
+  private DataSource dataSource = null;
+  private Connection connection = null;
 
-  private Connection connection = null ;
-  protected Connection connection() { return connection ; }
-  protected void connection( Connection newValue ) { connection = newValue ; }
-      
   // =========================================================================
   // CONSTRUCTORS
   // =========================================================================
@@ -56,15 +47,16 @@ public class SQLExecutor
   {
     super();
     if (aDataSource == null)
+    {
       throw new IllegalArgumentException("Datasource in SQLExecutor constructor is null");
+    }
 
     this.setDataSource(aDataSource);
-  } // SQLExecutor()
+  }
 
   // =========================================================================
   // PUBLIC INSTANCE METHODS
   // =========================================================================
-
   /**
    * Returns a PreparedStatement for the given SQL command.
    * 
@@ -74,9 +66,7 @@ public class SQLExecutor
   public PreparedStatement prepareWriteStatement(String sql) throws SQLException
   {
     return this.getConnection().prepareStatement(sql);
-  } // prepareWriteStatement()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Executes the given statement and returns the number of affected rows.
@@ -94,9 +84,7 @@ public class SQLExecutor
       return statement.executeUpdate();
     }
     return 0;
-  } // executeWriteStatement()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Executes the given SQL command and returns the number of affected rows.
@@ -116,9 +104,7 @@ public class SQLExecutor
       return statement.executeUpdate(sql);
     }
     return 0;
-  } // execute()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Executes the given SQL command and returns true if the execution was 
@@ -137,9 +123,7 @@ public class SQLExecutor
     {
       return false;
     }
-  } // execute()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Closes all open connections.
@@ -161,9 +145,7 @@ public class SQLExecutor
       return true;
     }
     return true;
-  } // close()
-
-  // -------------------------------------------------------------------------
+  }
 
   /**
    * Closes the given statement.
@@ -183,14 +165,11 @@ public class SQLExecutor
       }
     }
     return true;
-  } // closeStatement()
-
-  // -------------------------------------------------------------------------
+  }
 
   // =========================================================================
   // PROTECTED INSTANCE METHODS
   // =========================================================================
-
   protected Connection getConnection() throws SQLException
   {
     if (this.isClosed())
@@ -198,22 +177,36 @@ public class SQLExecutor
       this.connection(this.newConnection());
     }
     return this.connection();
-  } // getConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected Connection newConnection() throws SQLException
   {
     return this.getDataSource().getConnection();
-  } // newConnection() 
-
-  // -------------------------------------------------------------------------
+  }
 
   protected boolean isClosed()
   {
     return (this.connection() == null);
-  } // isClosed()
+  }
 
-  // -------------------------------------------------------------------------
+  protected DataSource getDataSource()
+  {
+    return this.dataSource;
+  }
 
-} // class SQLExecutor
+  protected void setDataSource(DataSource newValue)
+  {
+    this.dataSource = newValue;
+  }
+
+  protected Connection connection()
+  {
+    return this.connection;
+  }
+
+  protected void connection(Connection newValue)
+  {
+    this.connection = newValue;
+  }
+
+}

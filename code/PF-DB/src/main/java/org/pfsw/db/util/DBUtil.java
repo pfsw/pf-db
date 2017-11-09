@@ -24,99 +24,86 @@ import java.util.Enumeration;
  */
 public class DBUtil
 {
-	// =========================================================================
-	// CONSTANTS
-	// =========================================================================
+  // =========================================================================
+  // CLASS VARIABLES
+  // =========================================================================
+  private static DBUtil soleInstance = new DBUtil();
 
-	// =========================================================================
-	// CLASS VARIABLES
-	// =========================================================================
-	private static DBUtil soleInstance = new DBUtil();
+  // =========================================================================
+  // INSTANCE VARIABLES
+  // =========================================================================
 
-	// =========================================================================
-	// INSTANCE VARIABLES
-	// =========================================================================
+  // =========================================================================
+  // CLASS METHODS
+  // =========================================================================
 
-	// =========================================================================
-	// CLASS METHODS
-	// =========================================================================
+  /**
+   * Returns the only instance this class supports (design pattern "Singleton")
+   */
+  public static DBUtil current()
+  {
+    return soleInstance;
+  }
 
-	/**
-	 * Returns the only instance this class supports (design pattern "Singleton")
-	 */
-	public static DBUtil current()
-	{
-		return soleInstance;
-	} // instance()
+  // =========================================================================
+  // CONSTRUCTORS
+  // =========================================================================
+  protected DBUtil()
+  {
+    super();
+  }
 
-	// =========================================================================
-	// CONSTRUCTORS
-	// =========================================================================
-	protected DBUtil()
-	{
-		super();
-	} // DBUtil()
+  // =========================================================================
+  // PUBLIC INSTANCE METHODS
+  // =========================================================================
+  /**
+   * Loads the database driver with the given class name and registers it
+   * at the java.sql.DriverManager.
+   * 
+   * @param driverClassName The class name of the driver to load
+   * @return true if loading was successful, otherwise false
+   */
+  public boolean loadAndRegisterDriver(final String driverClassName)
+  {
+    if (driverClassName == null)
+    {
+      return false;
+    }
+    try
+    {
+      this.getClass().forName(driverClassName);
+      return this.isDriverRegistered(driverClassName);
+    }
+    catch (ClassNotFoundException ex)
+    {
+      return false;
+    }
+  }
 
-	// =========================================================================
-	// PUBLIC INSTANCE METHODS
-	// =========================================================================
-	/**
-	 * Loads the database driver with the given class name and registers it
-	 * at the java.sql.DriverManager.
-	 * 
-	 * @param driverClassName The class name of the driver to load
-	 * @return true if loading was successful, otherwise false
-	 */
-	public boolean loadAndRegisterDriver(final String driverClassName)
-	{
-		if (driverClassName == null)
-		{
-			return false;
-		}
-		try
-		{
-			this.getClass().forName(driverClassName);
-			return this.isDriverRegistered(driverClassName);
-		}
-		catch (ClassNotFoundException ex)
-		{
-			return false;
-		}
-	} // loadDriver()
+  /**
+   * Returns true if the database driver with the specified class name is
+   * registered at the java.sql.DriverManager.
+   * 
+   * @param driverClassName The class name of the driver to load
+   */
+  public boolean isDriverRegistered(final String driverClassName)
+  {
+    Enumeration<Driver> drivers;
+    Driver driver;
 
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Returns true if the database driver with the specified class name is
-	 * registered at the java.sql.DriverManager.
-	 * 
-	 * @param driverClassName The class name of the driver to load
-	 */
-	public boolean isDriverRegistered(final String driverClassName)
-	{
-		Enumeration<Driver> drivers;
-		Driver driver;
-
-		if (driverClassName == null)
-		{
-			return false;
-		}
-		drivers = DriverManager.getDrivers();
-		while (drivers.hasMoreElements())
-		{
-			driver = drivers.nextElement();
-			if (driverClassName.equals(driver.getClass().getName()))
-			{
-				return true;
-			}
-		}
-		return false;
-	} // isDriverRegistered()
-
-	// -------------------------------------------------------------------------
-
-	// =========================================================================
-	// PROTECTED INSTANCE METHODS
-	// =========================================================================
-
-} // class DBUtil
+    if (driverClassName == null)
+    {
+      return false;
+    }
+    drivers = DriverManager.getDrivers();
+    while (drivers.hasMoreElements())
+    {
+      driver = drivers.nextElement();
+      if (driverClassName.equals(driver.getClass().getName()))
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+}
