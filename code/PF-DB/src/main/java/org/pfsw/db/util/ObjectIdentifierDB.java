@@ -41,6 +41,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   // =========================================================================
   // CONSTANTS
   // =========================================================================
+  private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
+  
   protected static final String OID_TABLE_NAME = "OIDADMIN";
   protected static final String OID_CN_CATEGORY = "CATEGORY";
   protected static final String OID_CN_NEXTID = "NEXTID";
@@ -446,6 +448,10 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     }
     catch (SQLException e)
     {
+      if (DEBUG)
+      {
+        e.printStackTrace();
+      }
       return false;
     }
   }
@@ -456,8 +462,12 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       return this.anyRowExists(conn, this.sqlSelectCategory());
     }
-    catch (SQLException ex)
+    catch (SQLException e)
     {
+      if (DEBUG)
+      {
+        e.printStackTrace();
+      }
       return false;
     }
   }

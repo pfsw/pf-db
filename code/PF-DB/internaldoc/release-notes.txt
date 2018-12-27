@@ -1,7 +1,13 @@
 Database Utilities: Realease-Notes
 Author: Manfred Duchrow
-Copyright (c) 2002-2017, by Manfred Duchrow. All rights reserved.
+Copyright (c) 2002-2018, by Manfred Duchrow. All rights reserved.
 =======================================================================
+
+-----------------------------------------------------------------------
+
+VERSION 3.2.0 (27/12/2018), 7 Unit Tests
+
+* 
 
 -----------------------------------------------------------------------
 

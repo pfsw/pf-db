@@ -14,6 +14,8 @@ package org.pfsw.db.util;
 // ===========================================================================
 import static org.junit.Assert.*;
 
+import org.junit.Test;
+
 /**
  * Test class for corresponding business class.
  *
@@ -25,7 +27,7 @@ public class ObjectIdentifierGeneratorTest
   // =========================================================================
   // TEST METHODS
   // =========================================================================
-
+  @Test
   public void test_newIdentifier_1()
   {
     ObjectIdentifierGenerator idGen;
@@ -38,6 +40,7 @@ public class ObjectIdentifierGeneratorTest
     assertEquals("004", idGen.newIdentifier());
   }
 
+  @Test
   public void test_newIdentifier_2()
   {
     ObjectIdentifierGenerator idGen;
@@ -50,6 +53,7 @@ public class ObjectIdentifierGeneratorTest
     assertEquals("4", idGen.newIdentifier());
   }
 
+  @Test
   public void test_newIdentifier_3()
   {
     ObjectIdentifierGenerator idGen;
@@ -62,6 +66,7 @@ public class ObjectIdentifierGeneratorTest
     assertEquals("0503", idGen.newIdentifier());
   }
 
+  @Test
   public void test_newIdentifier_4()
   {
     ObjectIdentifierGenerator idGen;

@@ -30,6 +30,11 @@ import javax.sql.DataSource;
 public class SQLExecutor
 {
   // =========================================================================
+  // CONSTANTS
+  // =========================================================================
+  private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
+
+  // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
   private DataSource dataSource = null;
@@ -121,6 +126,10 @@ public class SQLExecutor
     }
     catch (SQLException e)
     {
+      if (DEBUG)
+      {
+        e.printStackTrace();
+      }
       return false;
     }
   }
@@ -139,6 +148,10 @@ public class SQLExecutor
       }
       catch (SQLException e)
       {
+        if (DEBUG)
+        {
+          e.printStackTrace();
+        }
         return false;
       }
       this.connection(null);
@@ -161,6 +174,10 @@ public class SQLExecutor
       }
       catch (SQLException e)
       {
+        if (DEBUG)
+        {
+          e.printStackTrace();
+        }
         return false;
       }
     }

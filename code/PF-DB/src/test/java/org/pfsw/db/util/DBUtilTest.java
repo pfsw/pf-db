@@ -47,8 +47,8 @@ public class DBUtilTest
   }
 
   @Test
-  public void test_loadAndRegisterDriver_ODBC()
+  public void test_loadAndRegisterDriver_H2()
   {
-    assertTrue(DBU.loadAndRegisterDriver("sun.jdbc.odbc.JdbcOdbcDriver"));
+    assertTrue(DBU.loadAndRegisterDriver("org.h2.Driver"));
   }
 }

@@ -25,13 +25,14 @@ import java.util.Enumeration;
 public class DBUtil
 {
   // =========================================================================
+  // CONSTANTS
+  // =========================================================================
+  private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
+  
+  // =========================================================================
   // CLASS VARIABLES
   // =========================================================================
   private static DBUtil soleInstance = new DBUtil();
-
-  // =========================================================================
-  // INSTANCE VARIABLES
-  // =========================================================================
 
   // =========================================================================
   // CLASS METHODS
@@ -76,6 +77,10 @@ public class DBUtil
     }
     catch (ClassNotFoundException ex)
     {
+      if (DEBUG)
+      {
+        ex.printStackTrace();
+      }
       return false;
     }
   }
