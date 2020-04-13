@@ -1,11 +1,32 @@
 Database Utilities: Realease-Notes
 Author: Manfred Duchrow
-Copyright (c) 2002-2018, by Manfred Duchrow. All rights reserved.
+Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
 =======================================================================
 
 -----------------------------------------------------------------------
 
-VERSION 3.2.0 (27/12/2018), 7 Unit Tests
+VERSION 3.3.0 (12/04/2020), 13 Unit Tests, 65.2% Coverage
+
+* ObjectIdGenerator
+  > Added
+    - protected void setStartId(long startId)
+
+* New classes
+  > ObjectIdentifierDBBuilder
+  > DatabaseAccessException
+
+* ObjectIdentifierDB
+  > Completely refactored
+    - Fixed synchronized
+    - Added locking for update
+    - Allowing definition of table name and columns
+    - Throwing DatabaseAccessException for critical situations
+
+* Upgrade to gradle 6.2.2
+
+-----------------------------------------------------------------------
+
+VERSION 3.2.0 (27/12/2018), 7 Unit Tests, 6.1% Coverage
 
 * Dependencies upgrade
 

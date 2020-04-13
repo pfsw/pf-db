@@ -9,9 +9,6 @@
 // ===========================================================================
 package org.pfsw.db;
 
-// ===========================================================================
-// IMPORTS
-// ===========================================================================
 import org.pfsw.logging.Logger;
 import org.pfsw.logging.nil.NilLogger;
 import org.pfsw.logging.stdout.PrintStreamLogger;

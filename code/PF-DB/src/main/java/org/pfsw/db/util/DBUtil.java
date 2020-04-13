@@ -9,9 +9,6 @@
 // ===========================================================================
 package org.pfsw.db.util;
 
-// ===========================================================================
-// IMPORTS
-// ===========================================================================
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.util.Enumeration;
@@ -72,8 +69,8 @@ public class DBUtil
     }
     try
     {
-      this.getClass().forName(driverClassName);
-      return this.isDriverRegistered(driverClassName);
+      getClass().forName(driverClassName);
+      return isDriverRegistered(driverClassName);
     }
     catch (ClassNotFoundException ex)
     {

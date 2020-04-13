@@ -1,7 +1,7 @@
 // ===========================================================================
 // CONTENT  : CLASS ObjectIdentifierDB
 // AUTHOR   : Manfred Duchrow
-// VERSION  : 1.5 - 22/02/2008
+// VERSION  : 2.0 - 13/04/2020
 // HISTORY  :
 //  05/01/2001  duma  CREATED
 //  02/12/2001  duma  moved from com.mdcs.db.util
@@ -9,14 +9,12 @@
 //	28/06/2002	duma	changed	-> Support blocks of ids
 //	22/12/2003	duma	changed	-> Use logger instead of stdout and stderr
 //	22/02/2008	mdu		changed	-> Support setting blockSize from outside
+//  13/04/2020  mdu   changed -> synchronized, connection.commit(), changeable column names
 //
-// Copyright (c) 2001-2008, by Manfred Duchrow. All rights reserved.
+// Copyright (c) 2001-2020, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
 package org.pfsw.db.util;
 
-// ===========================================================================
-// IMPORTS
-// ===========================================================================
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,6 +23,7 @@ import java.sql.Statement;
 
 import javax.sql.DataSource;
 
+import org.pfsw.db.DatabaseAccessException;
 import org.pfsw.db.LoggerProvider;
 import org.pfsw.logging.Logger;
 
@@ -32,9 +31,18 @@ import org.pfsw.logging.Logger;
  * Instances of this class provide generation of unique identifiers
  * backed by a specific database table. That means the next available
  * id will be always updated in the database.
+ * <p>
+ * It allows the definition of a blockSize which determines how many IDs
+ * are "loaded" into memory at once. A higher blockSize improves performance
+ * of generating new IDs extremely, but also implies the risk to lose some
+ * IDs if the application gets shut down and the in-memory IDs have not yet been consumed.
+ * <p>
+ * For a convenient way to setup a new instance see {@link ObjectIdentifierDBBuilder}.
+ * <p>
+ * In any critical (fatal) situation this class throws a {@link DatabaseAccessException}.
  * 
  * @author M.Duchrow
- * @version 1.5
+ * @version 2.0
  */
 public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 {
@@ -42,7 +50,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   // CONSTANTS
   // =========================================================================
   private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
-  
+
   protected static final String OID_TABLE_NAME = "OIDADMIN";
   protected static final String OID_CN_CATEGORY = "CATEGORY";
   protected static final String OID_CN_NEXTID = "NEXTID";
@@ -53,16 +61,22 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
-  private DataSource dataSource = null;
+  private final DataSource dataSource;
   private String category = "$DEFAULT";
   protected boolean tableInitialized = false;
-  private String select = null;
-  private String selectCategory = null;
-  private String selectAny = null;
-  private String update = null;
-  private String qualifier = null;
   private long lastPrefetchedId = 0;
-  protected Integer blockSize = null;
+  private Integer blockSize = INITIAL_BLOCKSIZE;
+
+  private String tableQualifier = null;
+  private String unqualifiedTableName = OID_TABLE_NAME;
+  private String categoryColumnName = OID_CN_CATEGORY;
+  private String nextIdColumnName = OID_CN_NEXTID;
+  private String blockSizeColumnName = OID_CN_BLOCKSIZE;
+
+  private String sqlSelectForUpdateStatement = null;
+  private String sqlSelectCategoryStatement = null;
+  private String sqlSelectAnyStatement = null;
+  private String sqlUpdateStatement = null;
 
   // =========================================================================
   // CONSTRUCTORS
@@ -85,8 +99,9 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
    */
   public ObjectIdentifierDB(String tableQualifier, DataSource ds)
   {
-    this.setDataSource(ds);
-    this.setQualifier(tableQualifier);
+    super();
+    this.dataSource = ds;
+    setTableQualifier(tableQualifier);
   }
 
   /**
@@ -98,11 +113,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
    */
   public ObjectIdentifierDB(DataSource ds, String categoryName)
   {
-    this(ds);
-    if ((categoryName != null) && (categoryName.length() > 0))
-    {
-      this.setCategory(categoryName);
-    }
+    this(null, ds, categoryName);
   }
 
   /**
@@ -116,9 +127,30 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   public ObjectIdentifierDB(String tableQualifier, DataSource ds, String categoryName)
   {
     this(tableQualifier, ds);
-    if ((categoryName != null) && (categoryName.length() > 0))
+    if (str().notNullOrBlank(categoryName))
     {
-      this.setCategory(categoryName);
+      setCategory(categoryName.trim());
+    }
+  }
+
+  /**
+   * Initialize the new instance with the data source.
+   * Assign a category where the OIDs belong to.
+   *
+   * @param tableQualifier A qualifier that is put in front of the table name
+   * @param ds A valid data source that allows connection to a database
+   * @param categoryName The name of the OID's category
+   * @param startId The first id to be generated.
+   * @param idLength The length to which Ids are filled up with leading zeros.
+   */
+  public ObjectIdentifierDB(String tableQualifier, DataSource ds, String categoryName, long startId, int idLength)
+  {
+    super(startId, idLength);
+    this.dataSource = ds;
+    setTableQualifier(tableQualifier);
+    if (str().notNullOrBlank(categoryName))
+    {
+      setCategory(categoryName.trim());
     }
   }
 
@@ -140,108 +172,109 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   /**
    * Set the block size this generator is using.
    */
-  public void setBlockSize(int newValue)
+  public ObjectIdentifierDB setBlockSize(int newValue)
   {
     if (newValue > 0)
     {
       blockSize = new Integer(newValue);
     }
+    return this;
+  }
+
+  @Override
+  public synchronized long nextIdentifier()
+  {
+    if (getNextId() > getLastPrefetchedId())
+    {
+      loadNextIdFromDB();
+    }
+    return super.nextIdentifier();
   }
 
   // =========================================================================
   // PROTECTED INSTANCE METHODS
   // =========================================================================
-
-  @Override
-  protected long getNextId()
+  /**
+   * This method should be invoked to prevent automatic table creation which makes
+   * sense if the table has been create already externally.
+   */
+  protected void tableAlreadyInitialized()
   {
-    if (this.getNextAvailableId() > this.getLastPrefetchedId())
-    {
-      this.loadNextIdFromDB();
-    }
-    return this.getNextAvailableId();
+    tableInitialized = true;
   }
 
-  protected void loadNextIdFromDB()
+  protected synchronized void loadNextIdFromDB()
   {
-    long id = 0;
+    long id;
 
-    if (this.tableInitialized())
+    if (tableInitialized())
     {
-      id = this.idFromDB();
-      this.setNextAvailableId(id);
+      id = idFromDB();
+      setNextId(id);
     }
   }
 
-  @Override
-  protected void setNextId(long id)
+  protected synchronized boolean tableInitialized()
   {
-    if (id > this.getLastPrefetchedId())
+    if (tableInitialized)
     {
-      this.loadNextIdFromDB();
+      return true;
     }
-    else
-    {
-      this.setNextAvailableId(id);
-    }
+    tableInitialized = initializeTableIfNecessary();
+    return tableInitialized;
   }
 
-  protected void setNextIdInDB(Connection conn, long id) throws SQLException
-  {
-    PreparedStatement statement = null;
-
-    statement = conn.prepareStatement(this.sqlUpdateNextId());
-    statement.setString(1, Long.toString(id));
-    statement.execute();
-  }
-
-  protected boolean tableInitialized()
+  protected boolean initializeTableIfNecessary()
   {
     Connection conn = null;
     PreparedStatement statement = null;
     String action = null;
     boolean ok = false;
 
-    if (tableInitialized)
+    synchronized (getDataSource())
     {
-      return true;
-    }
-    try
-    {
-      action = "Reading";
-      conn = this.getDbConnection();
-      ok = this.checkTableExists(conn);
-
-      if (!ok)
+      try
       {
-        action = "Creating";
-        this.createOidTable(conn);
-        ok = true;
+        conn = getDbConnection();
       }
-
-      if (ok)
+      catch (SQLException ex)
       {
-        ok = this.checkCategoryRowExists(conn);
+        throw new DatabaseAccessException(ex, "Opening database connection failed!");
+      }
+      try
+      {
+        action = "Reading";
+        ok = checkTableExists(conn);
+
         if (!ok)
         {
-          action = "Init";
-          this.createRowForCategory(conn);
+          action = "Creating";
+          createOidTable(conn);
           ok = true;
         }
-      }
-      tableInitialized = ok;
-    }
-    catch (SQLException ex)
-    {
-      this.reportSQLException(action + " OID table failed.", ex);
-    }
-    finally
-    {
-      this.closeStatement(statement);
-      this.closeConnection(conn);
-    }
 
-    return tableInitialized;
+        if (ok)
+        {
+          ok = checkCategoryRowExists(conn);
+          if (!ok)
+          {
+            action = "Init";
+            createRowForCategory(conn);
+            ok = true;
+          }
+        }
+      }
+      catch (SQLException ex)
+      {
+        throw new DatabaseAccessException(ex, "%s OID table '%s' failed.", action, getTableName());
+      }
+      finally
+      {
+        closeStatement(statement);
+        closeConnection(conn);
+      }
+      return ok;
+    }
   }
 
   protected long idFromDB()
@@ -249,23 +282,30 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     Connection conn = null;
     PreparedStatement statement = null;
     ResultSet result = null;
-    String idStr = null;
     long id = 0;
     int currentBlockSize = 0;
     long nextBlockStart = 0;
 
     try
     {
-      conn = this.getDbConnection();
-      statement = conn.prepareStatement(this.sqlSelectNextId());
+      conn = getDbConnection();
+      conn.setAutoCommit(false);
+    }
+    catch (SQLException ex)
+    {
+      throw new DatabaseAccessException(ex, "Opening database for updating '%s' in table '%s' failed!", getCategory(), getTableName());
+    }
+    try
+    {
+      statement = conn.prepareStatement(sqlSelectNextId());
       result = statement.executeQuery();
       if (result.next())
       {
-        idStr = result.getString(OID_CN_NEXTID);
-        id = Long.parseLong(idStr);
+        id = result.getLong(getNextIdColumnName());
+        System.out.printf("[%s] next-id from DB: %d%n", Thread.currentThread().getName(), id);
         if (blockSize == null)
         {
-          currentBlockSize = result.getInt(OID_CN_BLOCKSIZE);
+          currentBlockSize = result.getInt(getBlockSizeColumnName());
         }
         else
         {
@@ -278,20 +318,31 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
         }
 
         nextBlockStart = id + currentBlockSize;
-        this.setNextIdInDB(conn, nextBlockStart);
-        this.setLastPrefetchedId(nextBlockStart - 1);
+        setNextIdInDB(conn, nextBlockStart);
+        conn.commit();
+        setLastPrefetchedId(nextBlockStart - 1);
       }
     }
     catch (SQLException ex)
     {
-      this.reportSQLException("Reading OID table failed.", ex);
+      rollback(conn);
+      throw new DatabaseAccessException(ex, "Reading and updating '%s' table '%s' failed.", getCategory(), getTableName());
     }
     finally
     {
-      this.closeStatement(statement);
-      this.closeConnection(conn);
+      closeStatement(statement);
+      closeConnection(conn);
     }
     return id;
+  }
+
+  protected void setNextIdInDB(Connection conn, long id) throws SQLException
+  {
+    PreparedStatement statement = null;
+
+    statement = conn.prepareStatement(sqlUpdateNextId());
+    statement.setLong(1, id);
+    statement.execute();
   }
 
   protected String sqlCreateOidTable()
@@ -299,14 +350,14 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     StringBuffer buffer = new StringBuffer(200);
 
     buffer.append("CREATE TABLE ");
-    buffer.append(this.getTableName());
+    buffer.append(getTableName());
     buffer.append("(\n  ");
-    buffer.append(OID_CN_CATEGORY);
+    buffer.append(getCategoryColumnName());
     buffer.append("\t VARCHAR(50),\n  ");
-    buffer.append(OID_CN_NEXTID);
-    buffer.append("\t VARCHAR(50),\n");
-    buffer.append(OID_CN_BLOCKSIZE);
-    buffer.append("\t INTEGER )\n");
+    buffer.append(getNextIdColumnName());
+    buffer.append("\t BIGINT,\n");
+    buffer.append(getBlockSizeColumnName());
+    buffer.append("\t INTEGER)\n");
 
     return buffer.toString();
   }
@@ -316,13 +367,13 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     StringBuffer buffer = new StringBuffer(200);
 
     buffer.append("INSERT INTO ");
-    buffer.append(this.getTableName());
+    buffer.append(getTableName());
     buffer.append(" VALUES ( '");
     buffer.append(cat);
     buffer.append("', '");
-    buffer.append(Long.toString(this.getDefaultStartId()));
+    buffer.append(Long.toString(getNextId()));
     buffer.append("', ");
-    buffer.append(this.getBlockSize());
+    buffer.append(getBlockSize());
     buffer.append(" )");
 
     return buffer.toString();
@@ -330,94 +381,75 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 
   protected String sqlUpdateNextId()
   {
-    if (this.getUpdate() == null)
+    if (getSqlUpdateStatement() == null)
     {
       StringBuffer buffer = new StringBuffer(200);
 
       buffer.append("UPDATE ");
-      buffer.append(this.getTableName());
+      buffer.append(getTableName());
       buffer.append(" SET ");
-      buffer.append(OID_CN_NEXTID);
+      buffer.append(getNextIdColumnName());
       buffer.append("=? WHERE ");
-      buffer.append(OID_CN_CATEGORY);
+      buffer.append(getCategoryColumnName());
       buffer.append(" = '");
-      buffer.append(this.getCategory());
+      buffer.append(getCategory());
       buffer.append("'");
 
-      this.setUpdate(buffer.toString());
+      setSqlUpdateStatement(buffer.toString());
     }
-    return this.getUpdate();
+    return getSqlUpdateStatement();
   }
 
   protected String sqlSelectNextId()
   {
-    if (this.getSelect() == null)
+    String statement;
+
+    if (getSqlSelectForUpdateStatement() == null)
     {
-      StringBuffer buffer = new StringBuffer(200);
-
-      buffer.append("SELECT ");
-      buffer.append(OID_CN_NEXTID);
-      buffer.append(", ");
-      buffer.append(OID_CN_BLOCKSIZE);
-      buffer.append(" FROM ");
-      buffer.append(this.getTableName());
-      buffer.append(" WHERE ");
-      buffer.append(OID_CN_CATEGORY);
-      buffer.append(" = '");
-      buffer.append(this.getCategory());
-      buffer.append("'");
-
-      this.setSelect(buffer.toString());
+      //@formatter:off
+      statement = String.format("SELECT %s, %s FROM %s WHERE %s = '%s' FOR UPDATE%n", 
+          getNextIdColumnName(), getBlockSizeColumnName(), getTableName(), getCategoryColumnName(), getCategory());
+      //@formatter:on
+      setSqlSelectForUpdateStatement(statement);
     }
-    return this.getSelect();
+    return getSqlSelectForUpdateStatement();
   }
 
   protected String sqlSelectCategory()
   {
-    if (this.getSelectCategory() == null)
+    if (getSqlSelectCategoryStatement() == null)
     {
       StringBuffer buffer = new StringBuffer(200);
 
       buffer.append("SELECT ");
-      buffer.append(OID_CN_CATEGORY);
+      buffer.append(getCategoryColumnName());
       buffer.append(" FROM ");
-      buffer.append(this.getTableName());
+      buffer.append(getTableName());
       buffer.append(" WHERE ");
-      buffer.append(OID_CN_CATEGORY);
+      buffer.append(getCategoryColumnName());
       buffer.append(" = '");
-      buffer.append(this.getCategory());
+      buffer.append(getCategory());
       buffer.append("'");
 
-      this.setSelectCategory(buffer.toString());
+      setSqlSelectCategoryStatement(buffer.toString());
     }
-    return this.getSelectCategory();
+    return getSqlSelectCategoryStatement();
   }
 
   protected String sqlSelectAny()
   {
-    if (this.getSelectAny() == null)
+    if (getSqlSelectAnyStatement() == null)
     {
       StringBuffer buffer = new StringBuffer(200);
 
       buffer.append("SELECT ");
-      buffer.append(OID_CN_CATEGORY);
+      buffer.append(getCategoryColumnName());
       buffer.append(" FROM ");
-      buffer.append(this.getTableName());
+      buffer.append(getTableName());
 
-      this.setSelectAny(buffer.toString());
+      setSqlSelectAnyStatement(buffer.toString());
     }
-    return this.getSelectAny();
-  }
-
-  protected String categoryString()
-  {
-    StringBuffer buffer = new StringBuffer(200);
-
-    buffer.append("'");
-    buffer.append(this.getCategory());
-    buffer.append("'");
-
-    return buffer.toString();
+    return getSqlSelectAnyStatement();
   }
 
   protected void createOidTable(Connection conn) throws SQLException
@@ -425,9 +457,9 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     Statement statement;
 
     statement = conn.createStatement();
-    statement.execute(this.sqlCreateOidTable());
+    statement.execute(sqlCreateOidTable());
     conn.commit();
-    this.createRowForCategory(conn);
+    createRowForCategory(conn);
   }
 
   protected void createRowForCategory(Connection conn) throws SQLException
@@ -435,7 +467,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     Statement statement;
 
     statement = conn.createStatement();
-    statement.execute(this.sqlInsertCategoryRow(this.getCategory()));
+    statement.execute(sqlInsertCategoryRow(getCategory()));
     conn.commit();
   }
 
@@ -443,8 +475,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   {
     try
     {
-      this.anyRowExists(conn, this.sqlSelectAny());
-      return true; // Don't care how many rows exist.
+      return anyRowExists(conn, sqlSelectAny());
     }
     catch (SQLException e)
     {
@@ -460,7 +491,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   {
     try
     {
-      return this.anyRowExists(conn, this.sqlSelectCategory());
+      return anyRowExists(conn, sqlSelectCategory());
     }
     catch (SQLException e)
     {
@@ -480,28 +511,46 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 
     statement = conn.prepareStatement(sql);
     result = statement.executeQuery();
-    found = result.next();
-    result.close();
+    try
+    {
+      found = result.next();
+    }
+    finally
+    {
+      result.close();
+    }
     return found;
   }
 
-  protected void reportSQLException(String msg, SQLException ex)
+  protected void reportSQLException(SQLException ex, String msg, Object... args)
   {
-    this.logger().logError(msg, ex);
+    logger().logError(String.format(msg, args), ex);
   }
 
   protected String getTableName()
   {
-    if (this.getQualifier() == null)
+    if (getTableQualifier() == null)
     {
-      return OID_TABLE_NAME;
+      return getUnqualifiedTableName();
     }
-    return this.getQualifier() + "." + OID_TABLE_NAME;
+    return getTableQualifier() + "." + getUnqualifiedTableName();
   }
 
   protected Connection getDbConnection() throws SQLException
   {
-    return this.getDataSource().getConnection();
+    return getDataSource().getConnection();
+  }
+
+  protected void rollback(Connection conn)
+  {
+    try
+    {
+      conn.rollback();
+    }
+    catch (SQLException ex)
+    {
+      reportSQLException(ex, "Rollback of changes in table '%s' failed.", getTableName());
+    }
   }
 
   protected void closeConnection(Connection conn)
@@ -514,7 +563,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
-        this.logger().logException(ex);
+        logger().logException(ex);
       }
     }
   }
@@ -529,9 +578,14 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
-        this.logger().logException(ex);
+        logger().logException(ex);
       }
     }
+  }
+
+  protected boolean hasTableQualifier()
+  {
+    return getTableQualifier() != null;
   }
 
   protected Logger logger()
@@ -544,11 +598,6 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     return this.dataSource;
   }
 
-  protected void setDataSource(DataSource newValue)
-  {
-    this.dataSource = newValue;
-  }
-
   protected String getCategory()
   {
     return this.category;
@@ -559,54 +608,54 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     this.category = newValue;
   }
 
-  protected String getSelect()
+  protected String getSqlSelectForUpdateStatement()
   {
-    return this.select;
+    return this.sqlSelectForUpdateStatement;
   }
 
-  protected void setSelect(String newValue)
+  protected void setSqlSelectForUpdateStatement(String newValue)
   {
-    this.select = newValue;
+    this.sqlSelectForUpdateStatement = newValue;
   }
 
-  protected String getSelectCategory()
+  protected String getSqlSelectCategoryStatement()
   {
-    return this.selectCategory;
+    return this.sqlSelectCategoryStatement;
   }
 
-  protected void setSelectCategory(String newValue)
+  protected void setSqlSelectCategoryStatement(String newValue)
   {
-    this.selectCategory = newValue;
+    this.sqlSelectCategoryStatement = newValue;
   }
 
-  protected String getSelectAny()
+  protected String getSqlSelectAnyStatement()
   {
-    return this.selectAny;
+    return this.sqlSelectAnyStatement;
   }
 
-  protected void setSelectAny(String newValue)
+  protected void setSqlSelectAnyStatement(String newValue)
   {
-    selectAny = newValue;
+    sqlSelectAnyStatement = newValue;
   }
 
-  protected String getUpdate()
+  protected String getSqlUpdateStatement()
   {
-    return this.update;
+    return this.sqlUpdateStatement;
   }
 
-  protected void setUpdate(String newValue)
+  protected void setSqlUpdateStatement(String newValue)
   {
-    this.update = newValue;
+    this.sqlUpdateStatement = newValue;
   }
 
-  protected String getQualifier()
+  protected String getTableQualifier()
   {
-    return this.qualifier;
+    return this.tableQualifier;
   }
 
-  protected void setQualifier(String newValue)
+  protected void setTableQualifier(String newValue)
   {
-    this.qualifier = newValue;
+    this.tableQualifier = newValue;
   }
 
   protected long getLastPrefetchedId()
@@ -617,5 +666,51 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   protected void setLastPrefetchedId(long newValue)
   {
     this.lastPrefetchedId = newValue;
+  }
+
+  public String getUnqualifiedTableName()
+  {
+    return this.unqualifiedTableName;
+  }
+
+  public void setUnqualifiedTableName(String unqualifiedTableName)
+  {
+    this.unqualifiedTableName = unqualifiedTableName;
+  }
+
+  public String getCategoryColumnName()
+  {
+    return this.categoryColumnName;
+  }
+
+  public void setCategoryColumnName(String categoryColumnName)
+  {
+    this.categoryColumnName = categoryColumnName;
+  }
+
+  public String getNextIdColumnName()
+  {
+    return this.nextIdColumnName;
+  }
+
+  public void setNextIdColumnName(String nextIdColumnName)
+  {
+    this.nextIdColumnName = nextIdColumnName;
+  }
+
+  public String getBlockSizeColumnName()
+  {
+    return this.blockSizeColumnName;
+  }
+
+  public void setBlockSizeColumnName(String blockSizeColumnName)
+  {
+    this.blockSizeColumnName = blockSizeColumnName;
+  }
+
+  @Override
+  public String toString()
+  {
+    return String.format("%s('%s', '%s')", getClass().getSimpleName(), getTableName(), getCategory());
   }
 }

@@ -12,9 +12,6 @@
 // ===========================================================================
 package org.pfsw.db.util;
 
-// ===========================================================================
-// IMPORTS
-// ===========================================================================
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -54,7 +51,7 @@ public class DataSourceProxy implements DataSource
   public DataSourceProxy(Connection conn)
   {
     super();
-    this.setDbConnection(conn);
+    setDbConnection(conn);
   }
 
   /**
@@ -63,9 +60,9 @@ public class DataSourceProxy implements DataSource
   public DataSourceProxy(String url, String username, String password)
   {
     super();
-    this.setDbUrl(url);
-    this.setDbUserid(username);
-    this.setDbPassword(password);
+    setDbUrl(url);
+    setDbUserid(username);
+    setDbPassword(password);
   }
 
   /**
@@ -79,9 +76,9 @@ public class DataSourceProxy implements DataSource
   public DataSourceProxy(DataSource dataSource, String username, String password)
   {
     super();
-    this.setDataSource(dataSource);
-    this.setDbUserid(username);
-    this.setDbPassword(password);
+    setDataSource(dataSource);
+    setDbUserid(username);
+    setDbPassword(password);
   }
 
   public DataSourceProxy(DataSource dataSource)
@@ -98,21 +95,21 @@ public class DataSourceProxy implements DataSource
   @Override
   public Connection getConnection() throws SQLException
   {
-    if (this.hasConnection())
+    if (hasConnection())
     {
-      return this.getDbConnection();
+      return getDbConnection();
     }
 
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      return this.getDataSourceConnection();
+      return getDataSourceConnection();
     }
 
-    if ((this.getDbUserid() == null) || (this.getDbPassword() == null))
+    if ((getDbUserid() == null) || (getDbPassword() == null))
     {
-      return DriverManager.getConnection(this.getDbUrl());
+      return DriverManager.getConnection(getDbUrl());
     }
-    return DriverManager.getConnection(this.getDbUrl(), this.getDbUserid(), this.getDbPassword());
+    return DriverManager.getConnection(getDbUrl(), getDbUserid(), getDbPassword());
   }
 
   /**
@@ -121,11 +118,11 @@ public class DataSourceProxy implements DataSource
   @Override
   public Connection getConnection(String username, String password) throws SQLException
   {
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      return this.getDataSource().getConnection(username, password);
+      return getDataSource().getConnection(username, password);
     }
-    return DriverManager.getConnection(this.getDbUrl(), username, password);
+    return DriverManager.getConnection(getDbUrl(), username, password);
   }
 
   /**
@@ -184,9 +181,9 @@ public class DataSourceProxy implements DataSource
   @Override
   public int getLoginTimeout() throws SQLException
   {
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      return this.getDataSource().getLoginTimeout();
+      return getDataSource().getLoginTimeout();
     }
     return DriverManager.getLoginTimeout();
   }
@@ -197,9 +194,9 @@ public class DataSourceProxy implements DataSource
   @Override
   public PrintWriter getLogWriter() throws SQLException
   {
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      return this.getDataSource().getLogWriter();
+      return getDataSource().getLogWriter();
     }
     return DriverManager.getLogWriter();
   }
@@ -212,9 +209,9 @@ public class DataSourceProxy implements DataSource
   @Override
   public void setLoginTimeout(int timeout) throws SQLException
   {
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      this.getDataSource().setLoginTimeout(timeout);
+      getDataSource().setLoginTimeout(timeout);
     }
     else
     {
@@ -228,9 +225,9 @@ public class DataSourceProxy implements DataSource
   @Override
   public void setLogWriter(PrintWriter writer) throws SQLException
   {
-    if (this.hasDataSource())
+    if (hasDataSource())
     {
-      this.getDataSource().setLogWriter(writer);
+      getDataSource().setLogWriter(writer);
     }
     else
     {
@@ -259,12 +256,12 @@ public class DataSourceProxy implements DataSource
   // =========================================================================
   protected boolean hasDataSource()
   {
-    return this.getDataSource() != null;
+    return getDataSource() != null;
   }
 
   protected boolean hasConnection()
   {
-    return this.getDbConnection() != null;
+    return getDbConnection() != null;
   }
 
   /**
@@ -272,11 +269,11 @@ public class DataSourceProxy implements DataSource
    */
   protected Connection getDataSourceConnection() throws SQLException
   {
-    if ((this.getDbUserid() == null) || (this.getDbPassword() == null))
+    if ((getDbUserid() == null) || (getDbPassword() == null))
     {
-      return this.getDataSource().getConnection();
+      return getDataSource().getConnection();
     }
-    return this.getDataSource().getConnection(this.getDbUserid(), this.getDbPassword());
+    return getDataSource().getConnection(getDbUserid(), getDbPassword());
   }
 
   protected Connection getDbConnection()

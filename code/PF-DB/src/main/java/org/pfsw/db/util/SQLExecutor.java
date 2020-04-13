@@ -10,9 +10,6 @@
 // ===========================================================================
 package org.pfsw.db.util;
 
-// ===========================================================================
-// IMPORTS
-// ===========================================================================
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -56,7 +53,7 @@ public class SQLExecutor
       throw new IllegalArgumentException("Datasource in SQLExecutor constructor is null");
     }
 
-    this.setDataSource(aDataSource);
+    setDataSource(aDataSource);
   }
 
   // =========================================================================
@@ -70,7 +67,7 @@ public class SQLExecutor
    */
   public PreparedStatement prepareWriteStatement(String sql) throws SQLException
   {
-    return this.getConnection().prepareStatement(sql);
+    return getConnection().prepareStatement(sql);
   }
 
   /**
@@ -83,7 +80,7 @@ public class SQLExecutor
   {
     Connection conn;
 
-    conn = this.getConnection();
+    conn = getConnection();
     if (conn != null)
     {
       return statement.executeUpdate();
@@ -102,7 +99,7 @@ public class SQLExecutor
     Statement statement;
     Connection conn;
 
-    conn = this.getConnection();
+    conn = getConnection();
     if (conn != null)
     {
       statement = conn.createStatement();
@@ -121,7 +118,7 @@ public class SQLExecutor
   {
     try
     {
-      this.execute(sql);
+      execute(sql);
       return true;
     }
     catch (SQLException e)
@@ -144,7 +141,7 @@ public class SQLExecutor
     {
       try
       {
-        this.connection().close();
+        connection().close();
       }
       catch (SQLException e)
       {
@@ -154,7 +151,7 @@ public class SQLExecutor
         }
         return false;
       }
-      this.connection(null);
+      connection(null);
       return true;
     }
     return true;
@@ -189,21 +186,21 @@ public class SQLExecutor
   // =========================================================================
   protected Connection getConnection() throws SQLException
   {
-    if (this.isClosed())
+    if (isClosed())
     {
-      this.connection(this.newConnection());
+      connection(newConnection());
     }
-    return this.connection();
+    return connection();
   }
 
   protected Connection newConnection() throws SQLException
   {
-    return this.getDataSource().getConnection();
+    return getDataSource().getConnection();
   }
 
   protected boolean isClosed()
   {
-    return (this.connection() == null);
+    return (connection() == null);
   }
 
   protected DataSource getDataSource()
