@@ -83,7 +83,7 @@ public class ObjectIdentifierDBTest
     Collection<String> ids = Collections.synchronizedCollection(new ArrayList<String>());
     Thread thread1, thread2, thread3;
 
-    assertTrue(createIdGenerator2().tableInitialized());
+    assertTrue(createIdGenerator2().isTableInitialized());
 
     thread1 = new Thread(createRunnable(null, ids), "thread-b1");
     thread2 = new Thread(createRunnable(null, ids), "thread-b2");

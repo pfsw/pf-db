@@ -5,7 +5,7 @@ Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
 
 -----------------------------------------------------------------------
 
-VERSION 3.3.0 (12/04/2020), 13 Unit Tests, 65.2% Coverage
+VERSION 3.3.0 (16/04/2020), 13 Unit Tests, 64.4% Coverage
 
 * ObjectIdGenerator
   > Added

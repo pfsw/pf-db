@@ -64,6 +64,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   private final DataSource dataSource;
   private String category = "$DEFAULT";
   protected boolean tableInitialized = false;
+  protected boolean categoryInitialized = false;
   private long lastPrefetchedId = 0;
   private Integer blockSize = INITIAL_BLOCKSIZE;
 
@@ -207,14 +208,18 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   {
     long id;
 
-    if (tableInitialized())
+    if (isAllInitialized())
     {
       id = idFromDB();
       setNextId(id);
     }
   }
 
-  protected synchronized boolean tableInitialized()
+  protected boolean isAllInitialized() {
+    return isTableInitialized() & isCategoryInitialized();
+  }
+  
+  protected synchronized boolean isTableInitialized()
   {
     if (tableInitialized)
     {
@@ -222,6 +227,16 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     }
     tableInitialized = initializeTableIfNecessary();
     return tableInitialized;
+  }
+
+  protected synchronized boolean isCategoryInitialized()
+  {
+    if (categoryInitialized)
+    {
+      return true;
+    }
+    categoryInitialized = initializeCategory();
+    return categoryInitialized;
   }
 
   protected boolean initializeTableIfNecessary()
@@ -239,7 +254,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
-        throw new DatabaseAccessException(ex, "Opening database connection failed!");
+        throw new DatabaseAccessException(ex, "Opening database connection for initializing table '%s' failed!", getTableName());
       }
       try
       {
@@ -271,6 +286,41 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       finally
       {
         closeStatement(statement);
+        closeConnection(conn);
+      }
+      return ok;
+    }
+  }
+
+  protected boolean initializeCategory()
+  {
+    Connection conn;
+    boolean ok = false;
+
+    synchronized (getDataSource())
+    {
+      try
+      {
+        conn = getDbConnection();
+      }
+      catch (SQLException ex)
+      {
+        throw new DatabaseAccessException(ex, "Opening database connection for initializing ID generator '%s' failed!", getCategory());
+      }
+      try
+      {
+        ok = checkCategoryRowExists(conn);
+        if (!ok)
+        {
+          ok = createRowForCategory(conn);
+        }
+      }
+      catch (SQLException ex)
+      {
+        throw new DatabaseAccessException(ex, "Failed to create row for category '%s' in table '%s'.", getCategory(), getTableName());
+      }
+      finally
+      {
         closeConnection(conn);
       }
       return ok;
@@ -462,13 +512,14 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     createRowForCategory(conn);
   }
 
-  protected void createRowForCategory(Connection conn) throws SQLException
+  protected boolean createRowForCategory(Connection conn) throws SQLException
   {
     Statement statement;
 
     statement = conn.createStatement();
     statement.execute(sqlInsertCategoryRow(getCategory()));
     conn.commit();
+    return true;
   }
 
   protected boolean checkTableExists(Connection conn)
