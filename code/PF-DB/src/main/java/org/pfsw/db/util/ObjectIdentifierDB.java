@@ -1,7 +1,7 @@
 // ===========================================================================
 // CONTENT  : CLASS ObjectIdentifierDB
 // AUTHOR   : Manfred Duchrow
-// VERSION  : 2.0 - 13/04/2020
+// VERSION  : 2.0 - 18/04/2020
 // HISTORY  :
 //  05/01/2001  duma  CREATED
 //  02/12/2001  duma  moved from com.mdcs.db.util
@@ -9,7 +9,7 @@
 //	28/06/2002	duma	changed	-> Support blocks of ids
 //	22/12/2003	duma	changed	-> Use logger instead of stdout and stderr
 //	22/02/2008	mdu		changed	-> Support setting blockSize from outside
-//  13/04/2020  mdu   changed -> synchronized, connection.commit(), changeable column names
+//  18/04/2020  mdu   changed -> synchronized, connection.commit(), changeable column names
 //
 // Copyright (c) 2001-2020, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
@@ -25,7 +25,7 @@ import javax.sql.DataSource;
 
 import org.pfsw.db.DatabaseAccessException;
 import org.pfsw.db.LoggerProvider;
-import org.pfsw.logging.Logger;
+import org.pfsw.logging.Logger2;
 
 /**
  * Instances of this class provide generation of unique identifiers
@@ -51,28 +51,19 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   // =========================================================================
   private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
 
-  protected static final String OID_TABLE_NAME = "OIDADMIN";
-  protected static final String OID_CN_CATEGORY = "CATEGORY";
-  protected static final String OID_CN_NEXTID = "NEXTID";
-  protected static final String OID_CN_BLOCKSIZE = "BLOCKSIZE";
-
-  protected static final int INITIAL_BLOCKSIZE = 1;
+  public static final int INITIAL_BLOCKSIZE = 1;
 
   // =========================================================================
   // INSTANCE VARIABLES
   // =========================================================================
   private final DataSource dataSource;
   private String category = "$DEFAULT";
-  protected boolean tableInitialized = false;
+  protected boolean tableCreated = false;
   protected boolean categoryInitialized = false;
   private long lastPrefetchedId = 0;
   private Integer blockSize = INITIAL_BLOCKSIZE;
 
-  private String tableQualifier = null;
-  private String unqualifiedTableName = OID_TABLE_NAME;
-  private String categoryColumnName = OID_CN_CATEGORY;
-  private String nextIdColumnName = OID_CN_NEXTID;
-  private String blockSizeColumnName = OID_CN_BLOCKSIZE;
+  private IdGeneratorTableSpec tableSpec = IdGeneratorTableSpec.create();
 
   private String sqlSelectForUpdateStatement = null;
   private String sqlSelectCategoryStatement = null;
@@ -80,12 +71,37 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   private String sqlUpdateStatement = null;
 
   // =========================================================================
+  // CLASS METHODS
+  // =========================================================================
+  /**
+   * Creates a new instance with the data source and category.
+   *
+   * @param ds A valid data source that allows connection to a database (must not be null).
+   * @param categoryName The name of the OID's category (must not be null).
+   */
+  public static ObjectIdentifierDB create(DataSource ds, String categoryName)
+  {
+    return new ObjectIdentifierDB(ds, categoryName);
+  }
+
+  /**
+   * Creates a new instance with the data source and category.
+   *
+   * @param ds A valid data source that allows connection to a database (must not be null).
+   * @param categoryName The name of the OID's category (must not be null).
+   */
+  public static ObjectIdentifierDB create(DataSource ds, IdGeneratorTableSpec tableSpec, String categoryName)
+  {
+    return create(ds, categoryName).setTableSpec(tableSpec);
+  }
+  
+  // =========================================================================
   // CONSTRUCTORS
   // =========================================================================
   /**
    * Initialize the new instance with the given data source.
    *
-   * @param ds A valid data source that allows connection to a database
+   * @param ds A valid data source that allows connection to a database.
    */
   public ObjectIdentifierDB(DataSource ds)
   {
@@ -95,8 +111,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   /**
    * Initialize the new instance with the given data source.
    *
-   * @param tableQualifier A qualifier that is put in front of the table name
-   * @param ds A valid data source that allows connection to a database
+   * @param tableQualifier A qualifier that is put in front of the table name.
+   * @param ds A valid data source that allows connection to a database.
    */
   public ObjectIdentifierDB(String tableQualifier, DataSource ds)
   {
@@ -109,8 +125,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
    * Initialize the new instance with the data source.
    * Assign a category where the OIDs belong to.
    *
-   * @param ds A valid data source that allows connection to a database
-   * @param categoryName The name of the OID's category
+   * @param ds A valid data source that allows connection to a database.
+   * @param categoryName The name of the OID's category.
    */
   public ObjectIdentifierDB(DataSource ds, String categoryName)
   {
@@ -121,8 +137,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
    * Initialize the new instance with the data source.
    * Assign a category where the OIDs belong to.
    *
-   * @param tableQualifier A qualifier that is put in front of the table name
-   * @param ds A valid data source that allows connection to a database
+   * @param tableQualifier A qualifier that is put in front of the table name.
+   * @param ds A valid data source that allows connection to a database.
    * @param categoryName The name of the OID's category
    */
   public ObjectIdentifierDB(String tableQualifier, DataSource ds, String categoryName)
@@ -199,9 +215,9 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
    * This method should be invoked to prevent automatic table creation which makes
    * sense if the table has been create already externally.
    */
-  protected void tableAlreadyInitialized()
+  protected void tableAlreadyCreated()
   {
-    tableInitialized = true;
+    tableCreated = true;
   }
 
   protected synchronized void loadNextIdFromDB()
@@ -216,17 +232,17 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
   }
 
   protected boolean isAllInitialized() {
-    return isTableInitialized() & isCategoryInitialized();
+    return isTableCreated() & isCategoryInitialized();
   }
   
-  protected synchronized boolean isTableInitialized()
+  protected synchronized boolean isTableCreated()
   {
-    if (tableInitialized)
+    if (tableCreated)
     {
       return true;
     }
-    tableInitialized = initializeTableIfNecessary();
-    return tableInitialized;
+    tableCreated = initializeTableIfNecessary();
+    return tableCreated;
   }
 
   protected synchronized boolean isCategoryInitialized()
@@ -352,7 +368,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       if (result.next())
       {
         id = result.getLong(getNextIdColumnName());
-        System.out.printf("[%s] next-id from DB: %d%n", Thread.currentThread().getName(), id);
+        logger().debugf("[%s] next-id from DB for category '%s': %d%n", Thread.currentThread().getName(), getCategory(), id);
         if (blockSize == null)
         {
           currentBlockSize = result.getInt(getBlockSizeColumnName());
@@ -575,7 +591,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 
   protected void reportSQLException(SQLException ex, String msg, Object... args)
   {
-    logger().logError(String.format(msg, args), ex);
+    logger().errorf(ex, msg, args);
   }
 
   protected String getTableName()
@@ -614,7 +630,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
-        logger().logException(ex);
+        logger().warnf(ex, "Closing DB connection failed");
       }
     }
   }
@@ -629,7 +645,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
-        logger().logException(ex);
+        logger().warnf(ex, "Closing SQL statement failed");
       }
     }
   }
@@ -639,7 +655,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     return getTableQualifier() != null;
   }
 
-  protected Logger logger()
+  protected Logger2 logger()
   {
     return LoggerProvider.getLogger();
   }
@@ -699,16 +715,6 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     this.sqlUpdateStatement = newValue;
   }
 
-  protected String getTableQualifier()
-  {
-    return this.tableQualifier;
-  }
-
-  protected void setTableQualifier(String newValue)
-  {
-    this.tableQualifier = newValue;
-  }
-
   protected long getLastPrefetchedId()
   {
     return this.lastPrefetchedId;
@@ -719,46 +725,67 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     this.lastPrefetchedId = newValue;
   }
 
+  protected String getTableQualifier()
+  {
+    return getTableSpec().getTableQualifier();
+  }
+  
+  protected void setTableQualifier(String qualifier)
+  {
+    getTableSpec().setTableQualifier(qualifier);
+  }
+  
   public String getUnqualifiedTableName()
   {
-    return this.unqualifiedTableName;
+    return getTableSpec().getUnqualifiedTableName();
   }
 
   public void setUnqualifiedTableName(String unqualifiedTableName)
   {
-    this.unqualifiedTableName = unqualifiedTableName;
+    getTableSpec().setUnqualifiedTableName(unqualifiedTableName);
   }
 
   public String getCategoryColumnName()
   {
-    return this.categoryColumnName;
+    return getTableSpec().getCategoryColumnName();
   }
 
   public void setCategoryColumnName(String categoryColumnName)
   {
-    this.categoryColumnName = categoryColumnName;
+    getTableSpec().setCategoryColumnName(categoryColumnName);
   }
 
   public String getNextIdColumnName()
   {
-    return this.nextIdColumnName;
+    return getTableSpec().getNextIdColumnName();
   }
 
   public void setNextIdColumnName(String nextIdColumnName)
   {
-    this.nextIdColumnName = nextIdColumnName;
+    getTableSpec().setNextIdColumnName(nextIdColumnName);
   }
 
   public String getBlockSizeColumnName()
   {
-    return this.blockSizeColumnName;
+    return getTableSpec().getBlockSizeColumnName();
   }
 
   public void setBlockSizeColumnName(String blockSizeColumnName)
   {
-    this.blockSizeColumnName = blockSizeColumnName;
+    getTableSpec().setBlockSizeColumnName(blockSizeColumnName);
   }
 
+  protected IdGeneratorTableSpec getTableSpec()
+  {
+    return this.tableSpec;
+  }
+
+  protected ObjectIdentifierDB setTableSpec(IdGeneratorTableSpec tableSpec)
+  {
+    this.tableSpec = tableSpec;
+    return this;
+  }
+  
   @Override
   public String toString()
   {

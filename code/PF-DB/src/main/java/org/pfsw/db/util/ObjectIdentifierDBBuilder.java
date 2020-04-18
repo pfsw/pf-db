@@ -22,13 +22,24 @@ public class ObjectIdentifierDBBuilder
   /**
    * Creates a new builder instance with the given data source.
    *
-   * @param ds A valid data source that allows connection to a database
+   * @param ds A valid data source that allows connection to a database (must not be null).
    */
   public static ObjectIdentifierDBBuilder create(DataSource ds)
   {
     return new ObjectIdentifierDBBuilder(ds);
   }
-
+  
+  /**
+   * Creates a new builder instance with the given data source.
+   *
+   * @param ds A valid data source that allows connection to a database (must not be null).
+   * @param tableSpec The definition of the table and column names (must not be null).
+   */
+  public static ObjectIdentifierDBBuilder create(DataSource ds, IdGeneratorTableSpec tableSpec)
+  {
+    return create(ds).setTableSpec(tableSpec);
+  }
+  
   private final ObjectIdentifierDB objectIdentifierDB;
 
   protected ObjectIdentifierDBBuilder(DataSource ds)
@@ -44,6 +55,28 @@ public class ObjectIdentifierDBBuilder
   {
     getObjectIdentifierDB().setCategory(category);
     return this;
+  }
+  
+  /**
+   * Sets the whole table specification.
+   */
+  public ObjectIdentifierDBBuilder setTableSpec(IdGeneratorTableSpec tableSpec) 
+  {
+    getObjectIdentifierDB().setTableSpec(tableSpec);
+    return this;    
+  }
+  
+  /**
+   * Sets the values for the category from the given specification.
+   */
+  public ObjectIdentifierDBBuilder configureCategory(IdGeneratorCategorySpec categorySpec) 
+  {
+    setCategory(categorySpec.getCategoryName());
+    setStartId(categorySpec.getStartId());
+    setBlockSize(categorySpec.getBlockSize());
+    setLength(categorySpec.getLength());
+    setPaddingChar(categorySpec.getPaddingChar());
+    return this;    
   }
   
   /**
@@ -116,12 +149,25 @@ public class ObjectIdentifierDBBuilder
    * This method should be invoked to prevent automatic table creation which makes
    * sense if the table has been create already externally.
    */
-  public ObjectIdentifierDBBuilder tableAlreadyInitialized() 
+  public ObjectIdentifierDBBuilder tableAlreadyCreated() 
   {
-    getObjectIdentifierDB().tableAlreadyInitialized();
+    getObjectIdentifierDB().tableAlreadyCreated();
     return this;
   }
 
+  /**
+   * This method can be invoked to prevent automatic table creation which makes
+   * sense if the table has been create already externally.
+   */
+  public ObjectIdentifierDBBuilder tableAlreadyCreated(boolean isCreated) 
+  {
+    if (isCreated)
+    {
+      tableAlreadyCreated();
+    }
+    return this;
+  }
+  
   public ObjectIdentifierDBBuilder setTableQualifier(String tableQualifier)
   {
     getObjectIdentifierDB().setTableQualifier(tableQualifier);

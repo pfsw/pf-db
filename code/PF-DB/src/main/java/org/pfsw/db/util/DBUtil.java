@@ -24,13 +24,10 @@ public class DBUtil
   // =========================================================================
   // CONSTANTS
   // =========================================================================
+  public static final DBUtil DBU = new DBUtil();
+
   private static final boolean DEBUG = "true".equals(System.getProperty("org.pfsw.db.debug", "false"));
   
-  // =========================================================================
-  // CLASS VARIABLES
-  // =========================================================================
-  private static DBUtil soleInstance = new DBUtil();
-
   // =========================================================================
   // CLASS METHODS
   // =========================================================================
@@ -40,7 +37,7 @@ public class DBUtil
    */
   public static DBUtil current()
   {
-    return soleInstance;
+    return DBUtil.DBU;
   }
 
   // =========================================================================

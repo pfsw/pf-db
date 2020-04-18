@@ -24,6 +24,6 @@ dependencies {
   testCompile fileTree(dir: "${projectDir}/testlib", include: '**/*.jar')
 }
 
-wrapper { gradleVersion = '6.2.2' }
+wrapper { gradleVersion = '6.3' }
 
 println "${project.name} ${project.version} (autoModuleName: ${autoModuleName})"

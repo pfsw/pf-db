@@ -1,28 +1,44 @@
-Database Utilities: Realease-Notes
+Database Utilities: Release-Notes
 Author: Manfred Duchrow
 Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
 =======================================================================
 
 -----------------------------------------------------------------------
 
-VERSION 3.3.0 (16/04/2020), 13 Unit Tests, 64.4% Coverage
+VERSION 3.3.0 (18/04/2020), 22 Unit Tests, 72.3% Coverage
 
-* ObjectIdGenerator
+* ObjectIdentifierGenerator
   > Added
     - protected void setStartId(long startId)
 
 * New classes
-  > ObjectIdentifierDBBuilder
-  > DatabaseAccessException
+  > org.pfsw.db.DatabaseAccessException
+  > org.pfsw.db.util.ObjectIdentifierDBBuilder
+  > org.pfsw.db.util.IdGeneratorTableSpec
+  > org.pfsw.db.util.IdGeneratorCategorySpec
+  > org.pfsw.db.util.MultiCategoryIdentifierGenerator
+  > org.pfsw.db.util.DefaultMultiCategoryIdentifierGenerator
+  > org.pfsw.db.util.DBMultiCategoryIdGeneratorBuilder
 
 * ObjectIdentifierDB
   > Completely refactored
     - Fixed synchronized
     - Added locking for update
-    - Allowing definition of table name and columns
+    - Support definition of other table name and columns
     - Throwing DatabaseAccessException for critical situations
 
-* Upgrade to gradle 6.2.2
+* DBUtil
+  > Added
+    - public static final DBUtil DBU = new DBUtil();
+
+* SQlExecutor
+  > Added
+    - Closeable
+    - public void commit()
+
+* Added Automatic-Module-Name to manifest file
+
+* Upgrade to gradle 6.3
 
 -----------------------------------------------------------------------
 

@@ -83,7 +83,7 @@ public class ObjectIdentifierDBTest
     Collection<String> ids = Collections.synchronizedCollection(new ArrayList<String>());
     Thread thread1, thread2, thread3;
 
-    assertTrue(createIdGenerator2().isTableInitialized());
+    assertTrue(createIdGenerator2().isTableCreated());
 
     thread1 = new Thread(createRunnable(null, ids), "thread-b1");
     thread2 = new Thread(createRunnable(null, ids), "thread-b2");
@@ -188,7 +188,7 @@ public class ObjectIdentifierDBTest
     //@formatter:on
     if (tableExists)
     {
-      builder.tableAlreadyInitialized();
+      builder.tableAlreadyCreated();
     }
     return builder.build();
   }

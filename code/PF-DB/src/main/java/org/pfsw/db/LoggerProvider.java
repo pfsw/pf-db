@@ -10,6 +10,8 @@
 package org.pfsw.db;
 
 import org.pfsw.logging.Logger;
+import org.pfsw.logging.Logger2;
+import org.pfsw.logging.Logger2Logger;
 import org.pfsw.logging.nil.NilLogger;
 import org.pfsw.logging.stdout.PrintStreamLogger;
 
@@ -19,14 +21,14 @@ import org.pfsw.logging.stdout.PrintStreamLogger;
  * will use the new logger for further output.
  *
  * @author Manfred Duchrow
- * @version 1.0
+ * @version 2.0
  */
 public class LoggerProvider
 {
   // =========================================================================
   // CLASS VARIABLES
   // =========================================================================
-  private static Logger logger = new PrintStreamLogger();
+  private static Logger2 logger = new Logger2Logger(new PrintStreamLogger());
 
   // =========================================================================
   // PUBLIC CLASS METHODS
@@ -35,7 +37,7 @@ public class LoggerProvider
    * Returns the current logger used by this component to report
    * errors and exceptions. 
    */
-  public static Logger getLogger()
+  public static Logger2 getLogger()
   {
     return logger;
   }
@@ -46,9 +48,18 @@ public class LoggerProvider
    */
   public static void setLogger(Logger newLogger)
   {
+    setLogger2(new Logger2Logger((newLogger == null) ? new NilLogger() : newLogger));
+  }
+
+  /**
+   * Replace the logger by another one. A value of null installs
+   * the prg.pf.logging.NilLogger.
+   */
+  public static void setLogger2(Logger2 newLogger)
+  {
     if (newLogger == null)
     {
-      logger = new NilLogger();
+      logger = new Logger2Logger(new NilLogger());
     }
     else
     {

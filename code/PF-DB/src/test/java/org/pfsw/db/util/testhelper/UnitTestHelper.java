@@ -64,6 +64,7 @@ public class UnitTestHelper
   public static String getTempFolder()
   {
     File file = new File("./build/tmp");
+    file.mkdirs();
     return file.getAbsolutePath().replace('\\', '/');
   }
   

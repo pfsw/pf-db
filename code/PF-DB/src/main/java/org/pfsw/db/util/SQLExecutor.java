@@ -1,15 +1,17 @@
 // ===========================================================================
 // CONTENT  : CLASS SQLExecutor
 // AUTHOR   : Manfred Duchrow
-// VERSION  : 1.1 - 17/07/2002
+// VERSION  : 1.2 - 18/04/2020
 // HISTORY  :
-//  03/07/2002  duma  CREATED
-//	17/07/2002	duma	added		->	prepareWriteStatement(), executeWriteStatement()
+//  03/07/2002  mdu CREATED
+//	17/07/2002	mdu added		-> prepareWriteStatement(), executeWriteStatement()
+//  18/04/2020  mdu added   -> Closeable, commit()
 //
-// Copyright (c) 2002, by Manfred Duchrow. All rights reserved.
+// Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
 package org.pfsw.db.util;
 
+import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -22,9 +24,9 @@ import javax.sql.DataSource;
  * a database.
  *
  * @author Manfred Duchrow
- * @version 1.1
+ * @version 1.2
  */
-public class SQLExecutor
+public class SQLExecutor implements Closeable
 {
   // =========================================================================
   // CONSTANTS
@@ -132,10 +134,32 @@ public class SQLExecutor
   }
 
   /**
+   * Commit the last transaction.
+   */
+  public void commit() 
+  {
+    if (!isClosed())
+    {
+      try
+      {
+        getConnection().commit();
+      }
+      catch (SQLException e)
+      {
+        if (DEBUG)
+        {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+  
+  /**
    * Closes all open connections.
    * Connections will be reopened automatically if necessary.
    */
-  public boolean close()
+  @Override
+  public void close()
   {
     if (!isClosed())
     {
@@ -149,12 +173,12 @@ public class SQLExecutor
         {
           e.printStackTrace();
         }
-        return false;
+        return;
       }
       connection(null);
-      return true;
+      return;
     }
-    return true;
+    return;
   }
 
   /**
