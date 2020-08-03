@@ -5,6 +5,14 @@ Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
 
 -----------------------------------------------------------------------
 
+VERSION 3.3.1 (03/08/2020), 22 Unit Tests, 70.4% Coverage
+
+* ObjectIdentifierDB
+  > Changed getDbConnection() to always return a connection with autoCommit=false
+  > Added debug log for all SQLExcdeption stacktraces
+
+-----------------------------------------------------------------------
+
 VERSION 3.3.0 (18/04/2020), 22 Unit Tests, 72.3% Coverage
 
 * ObjectIdentifierGenerator

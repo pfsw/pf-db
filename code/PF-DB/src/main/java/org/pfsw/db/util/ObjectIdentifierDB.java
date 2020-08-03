@@ -1,7 +1,7 @@
 // ===========================================================================
 // CONTENT  : CLASS ObjectIdentifierDB
 // AUTHOR   : Manfred Duchrow
-// VERSION  : 2.0 - 18/04/2020
+// VERSION  : 2.1 - 03/08/2020
 // HISTORY  :
 //  05/01/2001  duma  CREATED
 //  02/12/2001  duma  moved from com.mdcs.db.util
@@ -10,6 +10,7 @@
 //	22/12/2003	duma	changed	-> Use logger instead of stdout and stderr
 //	22/02/2008	mdu		changed	-> Support setting blockSize from outside
 //  18/04/2020  mdu   changed -> synchronized, connection.commit(), changeable column names
+//  03/08/2020  mdu   changed -> ensure always autoCommit=false
 //
 // Copyright (c) 2001-2020, by Manfred Duchrow. All rights reserved.
 // ===========================================================================
@@ -42,7 +43,7 @@ import org.pfsw.logging.Logger2;
  * In any critical (fatal) situation this class throws a {@link DatabaseAccessException}.
  * 
  * @author M.Duchrow
- * @version 2.0
+ * @version 2.1
  */
 public class ObjectIdentifierDB extends ObjectIdentifierGenerator
 {
@@ -270,6 +271,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
+        logSqlExceptionStacktrace(ex, "Opening database connection for initializing table '%s' failed!", getTableName());
         throw new DatabaseAccessException(ex, "Opening database connection for initializing table '%s' failed!", getTableName());
       }
       try
@@ -297,6 +299,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
+        logSqlExceptionStacktrace(ex, "%s OID table '%s' failed.", action, getTableName());
         throw new DatabaseAccessException(ex, "%s OID table '%s' failed.", action, getTableName());
       }
       finally
@@ -321,6 +324,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
+        logSqlExceptionStacktrace(ex, "Opening database connection for initializing ID generator '%s' failed!", getCategory());
         throw new DatabaseAccessException(ex, "Opening database connection for initializing ID generator '%s' failed!", getCategory());
       }
       try
@@ -333,6 +337,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
       }
       catch (SQLException ex)
       {
+        logSqlExceptionStacktrace(ex, "Failed to create row for category '%s' in table '%s'.", getCategory(), getTableName());
         throw new DatabaseAccessException(ex, "Failed to create row for category '%s' in table '%s'.", getCategory(), getTableName());
       }
       finally
@@ -355,10 +360,10 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     try
     {
       conn = getDbConnection();
-      conn.setAutoCommit(false);
     }
     catch (SQLException ex)
     {
+      logSqlExceptionStacktrace(ex, "Opening database for updating '%s' in table '%s' failed!", getCategory(), getTableName());
       throw new DatabaseAccessException(ex, "Opening database for updating '%s' in table '%s' failed!", getCategory(), getTableName());
     }
     try
@@ -391,6 +396,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     }
     catch (SQLException ex)
     {
+      logSqlExceptionStacktrace(ex, "Reading and updating '%s' table '%s' failed.", getCategory(), getTableName());
       rollback(conn);
       throw new DatabaseAccessException(ex, "Reading and updating '%s' table '%s' failed.", getCategory(), getTableName());
     }
@@ -544,12 +550,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       return anyRowExists(conn, sqlSelectAny());
     }
-    catch (SQLException e)
+    catch (@SuppressWarnings("unused") SQLException e)
     {
-      if (DEBUG)
-      {
-        e.printStackTrace();
-      }
       return false;
     }
   }
@@ -560,12 +562,8 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     {
       return anyRowExists(conn, sqlSelectCategory());
     }
-    catch (SQLException e)
+    catch (@SuppressWarnings("unused") SQLException e)
     {
-      if (DEBUG)
-      {
-        e.printStackTrace();
-      }
       return false;
     }
   }
@@ -594,6 +592,14 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     logger().errorf(ex, msg, args);
   }
 
+  protected void logSqlExceptionStacktrace(SQLException e, String msg, Object... args) 
+  {
+    if (DEBUG)
+    {
+      logger().debugf(e, msg, args);
+    }
+  }
+  
   protected String getTableName()
   {
     if (getTableQualifier() == null)
@@ -603,9 +609,14 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     return getTableQualifier() + "." + getUnqualifiedTableName();
   }
 
+  /**
+   * Returns a new connection with autoCommit=false.
+   */
   protected Connection getDbConnection() throws SQLException
   {
-    return getDataSource().getConnection();
+    Connection connection = getDataSource().getConnection();
+    connection.setAutoCommit(false);
+    return connection;
   }
 
   protected void rollback(Connection conn)
@@ -785,7 +796,7 @@ public class ObjectIdentifierDB extends ObjectIdentifierGenerator
     this.tableSpec = tableSpec;
     return this;
   }
-  
+
   @Override
   public String toString()
   {
