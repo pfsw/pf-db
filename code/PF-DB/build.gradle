@@ -2,7 +2,7 @@ apply plugin: 'java'
 
 def includePath = project.pfswGradleIncludePath // usually specified in $GRADLE_USER_HOME/gradle.properties
 
-version = '3.3.1'
+version = '3.4.0'
 archivesBaseName = "pf-db"
 
 ext {
@@ -17,8 +17,8 @@ apply from: "${includePath}/java/java-compatibility.gradle"
 apply from: "${includePath}/java/publishing-java-full.gradle"
 
 dependencies {
-  compile group: group, name: 'pf-logging', version: '3.3.0'
-  compile group: group, name: 'pf-text', version: '8.3.0'
+  compile group: group, name: 'pf-logging', version: '3.4.0'
+  compile group: group, name: 'pf-text', version: '8.4.0'
 
   testCompile group: 'junit', name: 'junit', version: '4.12'
   testCompile fileTree(dir: "${projectDir}/testlib", include: '**/*.jar')

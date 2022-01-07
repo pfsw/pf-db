@@ -1,7 +1,13 @@
 Database Utilities: Release-Notes
 Author: Manfred Duchrow
-Copyright (c) 2002-2020, by Manfred Duchrow. All rights reserved.
+Copyright (c) 2002-2022, by Manfred Duchrow. All rights reserved.
 =======================================================================
+
+-----------------------------------------------------------------------
+
+VERSION 3.4.0 (07/01/2022), 22 Unit Tests, 70.4% Coverage
+
+* Dependencies upgrade
 
 -----------------------------------------------------------------------
 
