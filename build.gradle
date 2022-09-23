@@ -1,8 +1,11 @@
-apply plugin: 'java'
+plugins {
+  id 'signing'
+}
+apply plugin: 'java-library'
 
 def includePath = project.pfswGradleIncludePath // usually specified in $GRADLE_USER_HOME/gradle.properties
 
-version = '3.4.0'
+version = '3.5.0'
 archivesBaseName = "pf-db"
 
 ext {
@@ -16,12 +19,18 @@ apply from: "${includePath}/java/java-6-compile.gradle"
 apply from: "${includePath}/java/java-compatibility.gradle"
 apply from: "${includePath}/java/publishing-java-full.gradle"
 
-dependencies {
-  compile group: group, name: 'pf-logging', version: '3.4.0'
-  compile group: group, name: 'pf-text', version: '8.4.0'
+signing {
+  sign publishing.publications.mavenJava
+}
 
-  testCompile group: 'junit', name: 'junit', version: '4.12'
-  testCompile fileTree(dir: "${projectDir}/testlib", include: '**/*.jar')
+dependencies {
+  api group: group, name: 'pf-logging', version: '3.5.0'
+  api group: group, name: 'pf-text', version: '8.5.0'
+
+  testImplementation group: 'junit', name: 'junit', version: '4.12'
+  testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: '1.3'
+  testImplementation group: 'org.mockito', name: 'mockito-core', version: '1.10.19'
+  testRuntimeOnly fileTree(dir: "${projectDir}/testlib", include: '**/*.jar')
 }
 
 wrapper { gradleVersion = '6.3' }

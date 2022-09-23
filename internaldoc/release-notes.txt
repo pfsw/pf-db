@@ -5,6 +5,12 @@ Copyright (c) 2002-2022, by Manfred Duchrow. All rights reserved.
 
 -----------------------------------------------------------------------
 
+VERSION 3.5.0 (23/09/2022), 22 Unit Tests, 70.4% Coverage
+
+* Restructured and added signing of published artifacts
+
+-----------------------------------------------------------------------
+
 VERSION 3.4.0 (07/01/2022), 22 Unit Tests, 70.4% Coverage
 
 * Dependencies upgrade
