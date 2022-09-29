@@ -9,30 +9,27 @@ version = '3.5.0'
 archivesBaseName = "pf-db"
 
 ext {
-  javaVersion = '1.6'
+  javaVersion = '6'
   javaModuleNameSuffix = 'db'
 }
 
 apply from: "${includePath}/common/ext-variables.gradle"
 apply from: "${includePath}/common/repositories.gradle"
-apply from: "${includePath}/java/java-6-compile.gradle"
+apply from: "${includePath}/java/java-${javaVersion}-compile.gradle"
 apply from: "${includePath}/java/java-compatibility.gradle"
 apply from: "${includePath}/java/publishing-java-full.gradle"
-
-signing {
-  sign publishing.publications.mavenJava
-}
+apply from: "${includePath}/java/sign-publications.gradle"
 
 dependencies {
   api group: group, name: 'pf-logging', version: '3.5.0'
   api group: group, name: 'pf-text', version: '8.5.0'
 
-  testImplementation group: 'junit', name: 'junit', version: '4.12'
-  testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: '1.3'
-  testImplementation group: 'org.mockito', name: 'mockito-core', version: '1.10.19'
+  testImplementation group: 'junit', name: 'junit', version: junit4Version
+  testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+  testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
   testRuntimeOnly fileTree(dir: "${projectDir}/testlib", include: '**/*.jar')
 }
 
-wrapper { gradleVersion = '6.3' }
+wrapper { gradleVersion = '6.9' }
 
 println "${project.name} ${project.version} (autoModuleName: ${autoModuleName})"
